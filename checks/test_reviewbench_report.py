@@ -265,42 +265,21 @@ class ReviewBenchReportTest(unittest.TestCase):
         self.assertIn("- Wave review held: 1; returned findings: 0; no verdict: 0", health)
         self.assertIn("- Second pass relaunched arms: 0", health)
 
-    def test_review_files_with_the_cap_count_print_its_mean_beside_the_merge_and_the_review(self):
+    def test_a_review_file_recording_the_cap_count_from_an_earlier_run_stays_readable_and_prints_no_cap_line(self):
         capped = review_file("findings", False, 50, 2, 3, [])
         capped["counts"]["removed_by_cap"] = 5
-        uncapped = review_file("holds", False, 4, 1, 0, [])
-        uncapped["counts"]["removed_by_cap"] = 0
         with tempfile.TemporaryDirectory() as folder:
             run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
             write_json(run_dir / "logs" / "pr-0" / "review.json", capped)
-            write_json(run_dir / "logs" / "pr-1" / "review.json", uncapped)
             health = health_text(run_dir)
+        self.assertIn("- Pull requests with a readable review file: 1", health)
+        self.assertIn("- Unreadable review files: 0", health)
         self.assertIn(
-            "- Mean findings removed by the merge: 1.5\n"
-            "- Mean findings removed by the cap of 40: 2.5 (2 of 2 review files record it)\n"
-            "- Mean findings removed by the wave review: 1.5",
+            "- Mean findings removed by the merge: 2.0\n"
+            "- Mean findings removed by the wave review: 3.0",
             health,
         )
-
-    def test_an_older_review_file_without_the_cap_count_stays_readable_and_is_left_out_of_the_cap_mean_only(self):
-        capped = review_file("findings", False, 50, 2, 3, [])
-        capped["counts"]["removed_by_cap"] = 5
-        with tempfile.TemporaryDirectory() as folder:
-            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
-            write_json(run_dir / "logs" / "pr-0" / "review.json", capped)
-            write_json(run_dir / "logs" / "pr-1" / "review.json", review_file("holds", False, 4, 1, 0, []))
-            health = health_text(run_dir)
-        self.assertIn("- Pull requests with a readable review file: 2", health)
-        self.assertIn("- Unreadable review files: 0", health)
-        self.assertIn("- Mean findings removed by the merge: 1.5", health)
-        self.assertIn("- Mean findings removed by the cap of 40: 5.0 (1 of 2 review files record it)", health)
-
-    def test_review_files_none_of_which_record_the_cap_count_print_its_mean_as_unknown(self):
-        with tempfile.TemporaryDirectory() as folder:
-            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
-            write_json(run_dir / "logs" / "pr-0" / "review.json", review_file("holds", False, 4, 1, 0, []))
-            health = health_text(run_dir)
-        self.assertIn("- Mean findings removed by the cap of 40: unknown (0 of 1 review files record it)", health)
+        self.assertNotIn("removed by the cap", health)
 
     def test_a_review_file_in_a_set_aside_before_folder_is_not_counted(self):
         with tempfile.TemporaryDirectory() as folder:

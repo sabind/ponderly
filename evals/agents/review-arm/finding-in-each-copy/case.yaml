@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: finding-in-each-copy
+context:
+  scaffold_script: scaffold.sh

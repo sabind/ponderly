@@ -238,13 +238,10 @@ def health_section(reviews, findings_count):
             failed_lenses[lens] = failed_lenses.get(lens, 0) + 1
     lines = heading + [
         "Each pull request's review file records what the review skill did: whether the wave review held the "
-        "findings, whether a second pass relaunched arms, which arms failed and how many candidates the merge, "
-        "the cap of 40 and the wave review removed. A review file that does not parse, or lacks any of those fields "
-        "other than the cap's count, is counted as unreadable and left out of every other line. A review file that "
-        "lacks only the cap's count was written before the review skill recorded it; it stays readable and is left "
-        "out of the cap's mean only. A review that failed "
-        "keeps its review file but writes no findings file, so the review-file count can exceed the findings-file "
-        "count.",
+        "findings, whether a second pass relaunched arms, which arms failed and how many candidates the merge "
+        "and the wave review removed. A review file that does not parse, or lacks any of those fields, is counted "
+        "as unreadable and left out of every other line. A review that failed keeps its review file but writes "
+        "no findings file, so the review-file count can exceed the findings-file count.",
         "",
         "- Pull requests with a readable review file: {}".format(len(readable)),
         "- Unreadable review files: {}".format(unreadable_count),
@@ -259,20 +256,11 @@ def health_section(reviews, findings_count):
         candidates = [review["counts"]["candidates"] for review in readable]
         removed_by_merge = [review["counts"]["removed_by_merge"] for review in readable]
         removed_by_review = [review["counts"]["removed_by_review"] for review in readable]
-        recorded_caps = [review["counts"].get("removed_by_cap") for review in readable]
-        removed_by_cap = [removed for removed in recorded_caps if is_count(removed)]
-        if removed_by_cap:
-            mean_removed_by_cap = "{:.1f}".format(sum(removed_by_cap) / len(removed_by_cap))
-        else:
-            mean_removed_by_cap = UNKNOWN
         lines += [
             "- Candidates per pull request: mean {:.1f}, largest {}".format(
                 sum(candidates) / len(candidates), max(candidates)
             ),
             "- Mean findings removed by the merge: {:.1f}".format(sum(removed_by_merge) / len(removed_by_merge)),
-            "- Mean findings removed by the cap of 40: {} ({} of {} review files record it)".format(
-                mean_removed_by_cap, len(removed_by_cap), len(readable)
-            ),
             "- Mean findings removed by the wave review: {:.1f}".format(
                 sum(removed_by_review) / len(removed_by_review)
             ),

@@ -9,7 +9,6 @@ import json
 import os
 
 SEVERITY_ORDER = ("high", "medium", "low")
-MAX_FINDINGS = 40
 FINDING_STRING_FIELDS = ("file", "category", "message")
 FINDING_INTEGER_FIELDS = ("start_line", "end_line")
 USAGE_FIELDS = ("time_in_ms", "cost_usd", "total_tokens")
@@ -80,11 +79,10 @@ def validate(candidates, line_count_of):
     file is absent; it is never asked for a path that is empty or only dots
     and slashes, which counts as an absent file. The findings come back with
     normalised paths, ordered high, medium, low with input order kept inside
-    a severity, and at most 40 of them. The second value maps each reason,
-    "absent_file", "lines_out_of_range" and "over_limit", to how many were
-    dropped for it.
+    a severity. The second value maps each reason, "absent_file" and
+    "lines_out_of_range", to how many were dropped for it.
     """
-    dropped = {"absent_file": 0, "lines_out_of_range": 0, "over_limit": 0}
+    dropped = {"absent_file": 0, "lines_out_of_range": 0}
     kept = []
     for candidate in candidates:
         path = normalise_path(candidate["file"])
@@ -103,8 +101,7 @@ def validate(candidates, line_count_of):
         finding["file"] = path
         kept.append(finding)
     kept.sort(key=lambda finding: SEVERITY_ORDER.index(finding["severity"]))
-    dropped["over_limit"] = max(0, len(kept) - MAX_FINDINGS)
-    return kept[:MAX_FINDINGS], dropped
+    return kept, dropped
 
 
 def build_findings_file(findings, env, usage):

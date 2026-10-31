@@ -99,8 +99,7 @@ health counts, from the `review.json` files, the readable and unreadable review
 files and the findings files, how often the wave review held the findings,
 returned findings or gave no verdict, how often a second pass relaunched
 arms, which lenses lost an arm, the mean and largest number of candidates, and
-the mean number of findings removed by the merge, by the cap and by the wave
-review.
+the mean number of findings removed by the merge and by the wave review.
 
 ## Variables
 

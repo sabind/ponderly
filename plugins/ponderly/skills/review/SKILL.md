@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review a pull request and return line-anchored findings. Use when asked to review this branch, review this pull request, review these commits or review a base...head range. Takes the range from the argument, or the branch's merge base with the default branch up to the working tree when there is none, launches one review-arm agent per lens in its lenses file, all at once, and merges what they return. The merge relaunches once an arm whose block is missing or malformed, then drops it and names its arm, checks every finding's file and lines at the head, collapses duplicates as --duplicates says, orders high, medium, low and keeps at most 40. Has the wave-reviewer agent read the change with the merged findings quoted, folds its findings into the list, and reruns only arms it contradicted, when the budget allows. Returns the findings with their counts and the wave review's verdict, or writes them as JSON to a path outside the repository with --json. Changes no file in the repository and commits nothing.
+description: Review a pull request and return line-anchored findings. Use when asked to review this branch, review this pull request, review these commits or review a base...head range. Takes the range from the argument, or the branch's merge base with the default branch up to the working tree when there is none, launches one review-arm agent per lens in its lenses file, all at once, and merges what they return. The merge relaunches once an arm whose block is missing or malformed, then drops it and names its arm, checks every finding's file and lines at the head, collapses duplicates as --duplicates says, and orders high, medium, low. Has the wave-reviewer agent read the change with the merged findings quoted, folds its findings into the list, and reruns only arms it contradicted, when the budget allows. Returns the findings with their counts and the wave review's verdict, or writes them as JSON to a path outside the repository with --json. Changes no file in the repository and commits nothing.
 argument-hint: "[base...head] [--json <path>] [--duplicates same-defect|keep|overlap]"
 allowed-tools: Bash(git status *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git diff *) Bash(git show *) Bash(git ls-files *) Bash(git log *) Bash(git cat-file *) Bash(awk *)
 ---
@@ -17,7 +17,7 @@ Terms used below:
 
 - An **arm** is the plugin's `review-arm` agent, launched as `ponderly:review-arm`, one per lens. Its own definition holds its procedure and the shape of its arm block, so the launch carries only the review's inputs; it gathers the diff itself.
 - The **reviewer** is the plugin's `wave-reviewer` agent, launched as `ponderly:wave-reviewer`, once per review. Its own definition holds its procedure and the shape of its Findings.
-- A **lens** is one `##` section of `lenses.md`. The **shared standard** is the three sentences of that file's opening paragraph from "Across every lens" to the paragraph's end.
+- A **lens** is one `##` section of `lenses.md`. The **shared standard** is the sentences of that file's opening paragraph from "Across every lens" to the paragraph's end.
 
 ## Working with the author
 
@@ -42,7 +42,7 @@ With a base and a head from the arguments, the base is `git merge-base <base> <h
 
 With no range, the head is the working tree and the base is the branch's merge base with the default branch: the default branch is `git rev-parse --abbrev-ref origin/HEAD` with the `origin/` prefix removed, or `main` when that command fails, as it does when `origin/HEAD` is unset, even though it still prints `origin/HEAD`; the base is `git merge-base origin/<default> HEAD`; when there is no `origin`, it is `git merge-base <default> HEAD` with the local default branch, if that branch exists and is not the current one; when neither exists, or the merge base cannot be found, the base is `HEAD`. The changed files are those `git diff --name-only <base>` lists, which compares the working tree with the base, with the new files `git ls-files --others --exclude-standard` lists.
 
-When the list of changed files is empty, say "no diff" with the base and head it was measured between, return no findings, and stop. With `--json`, write the findings object of step 4 with `pass` `"final"`, `verdict` `null`, `second_pass` `false`, every count 0, `removed_by_cap` included, and `findings` `[]` before stopping.
+When the list of changed files is empty, say "no diff" with the base and head it was measured between, return no findings, and stop. With `--json`, write the findings object of step 4 with `pass` `"final"`, `verdict` `null`, `second_pass` `false`, every count 0, `departures_not_reported`, `folded` and `not_anchored` included, `failed_arms` and `relaunched` `[]`, `findings` `[]` and `not_reported` `[]` before stopping.
 
 ## 3. Launch the arms
 
@@ -66,11 +66,10 @@ Then, in order:
 
 1. **Normalise** each candidate's `file` to forward slashes, with no leading `./` or `/`.
 2. **Check it at the head.** For a head commit, the file exists when `git cat-file -e <head>:<file>` succeeds, and its line count is `git show <head>:<file> | awk 'END{print NR}'`; for the working tree, the file exists when it is in the working tree, and its line count is `awk 'END{print NR}' <file>`. Drop a candidate whose file is absent, or whose lines are not 1 ≤ `start_line` ≤ `end_line` ≤ that line count.
-3. **Collapse duplicates**, as `--duplicates` says. `same-defect`, the default: two candidates in the same file become one only when they name the same defect and the same fix; a different `category` is a sign they do not, since each lens reports its own kind of problem, so a correctness finding on a line and a performance finding spanning it stay two findings. `overlap`: two candidates in the same file whose line ranges overlap also become one. `keep`: no candidate is collapsed. When two become one, keep the one whose message is fuller, with its own `start_line` and `end_line`, never a union of the two ranges, and drop the other.
+3. **Collapse duplicates**, as `--duplicates` says. `same-defect`, the default: two candidates in the same file become one only when they name the same defect and the same fix, and never when each names the other's file and line, since those are one defect at several places; a different `category` is a sign they do not, since each lens reports its own kind of problem, so a correctness finding on a line and a performance finding spanning it stay two findings. `overlap`: two candidates in the same file whose line ranges overlap also become one. `keep`: no candidate is collapsed. When two become one, keep the one whose message is fuller, with its own `start_line` and `end_line`, never a union of the two ranges, and drop the other.
 4. **Order** high, then medium, then low, keeping the lenses' order within a severity.
-5. **Cap** at 40, dropping from the lowest severity.
 
-The merged list is what is left. **Removed by the merge** is the number of candidates the head check and the duplicate collapse dropped; **removed by the cap** is the number the cap of 40 dropped, counted apart; **removed by the review** is 0 until step 6. So the candidates are the merged list plus removed by the merge plus removed by the cap.
+The merged list is what is left. **Removed by the merge** is the number of candidates the head check and the duplicate collapse dropped; **removed by the review** is 0 until step 6. So the candidates are the merged list plus removed by the merge.
 
 With `--json`, write the interim findings object to the path with the Write tool, after this first merge and before the wave review:
 
@@ -79,10 +78,11 @@ With `--json`, write the interim findings object to the path with the Write tool
   "pass": "first",
   "verdict": null,
   "second_pass": false,
-  "counts": {"candidates": 0, "removed_by_merge": 0, "removed_by_cap": 0, "removed_by_review": 0, "failed_arms": []},
+  "counts": {"candidates": 0, "removed_by_merge": 0, "removed_by_review": 0, "failed_arms": []},
   "findings": [
     {"file": "path/at/head.py", "start_line": 1, "end_line": 1, "severity": "high", "category": "correctness", "message": "..."}
-  ]
+  ],
+  "not_reported": []
 }
 ```
 
@@ -93,10 +93,14 @@ With `--json`, write the interim findings object to the path with the Write tool
 Launch the reviewer once, with the Agent tool as `subagent_type: ponderly:wave-reviewer` and a prompt that holds:
 
 - the range in place of a file list: the base commit, and the head commit or the words "the working tree";
-- the sentence, verbatim, "These changes are a pull request reviewed for the review skill: judge style, structure, comments and tests against the repository's own bar, what its CLAUDE.md, its contributing guide and the code around the change already do, and report a team-rule departure the repository also shows, or one with no concrete cost in this change, as a nit.";
+- the sentence, verbatim, "These changes are a pull request reviewed for the review skill: judge style, structure, comments and tests against the repository's own bar, what its CLAUDE.md, AGENTS.md, .claude/rules/ files and contributing guide say and the code around the change already does, and list a team-rule departure with no concrete cost in this change under unsure, not as a finding, unless it also departs from that bar.";
+- the sentence, verbatim, "Apart from the departures the sentence above lists under unsure, report a problem at each place that needs its own edit, and, when an edit at either of two places alone would fix it, at the place the pull request changed, at each when it changed both, or on the lines next to the removal when it changed neither: one entry per place, each with its own quote and naming the others, never other places listed inside one entry; such a set is not a duplicate, in this list or in yours. A problem you can tie to a file and an exact quote at head is a finding at the severity it deserves, with any doubt stated in its problem together with what would settle it, a file to read or a case to run; a doubtful problem with no way to settle it, or one you cannot quote, goes under unsure.";
+- the arms' leads: each `unsure` entry beginning `outside lens:` in the arm blocks the merge took, quoted with its arm's lens, under the words "Leads the arms noticed outside their lens and did not settle: verify each against the code at the head and report those it bears out.", or the words "No leads." when there is none;
 - the merged list, quoted in the arm block's shape, as the text that cites the changed files: every place where a finding and the code at the head disagree is a finding, and so is a problem in the changes the list does not hold.
 
 Nothing more, and never the diff. If the Agent tool cannot find `ponderly:wave-reviewer`, say that the plugin's `wave-reviewer` agent is missing, and go on as for a wave review that did not return: the merged list is the final list, the verdict is that the wave review did not run, and there is no second pass; go to step 7.
+
+When the Findings have a `verdict` line, the **departures not reported** are their `unsure` entries that begin `departure not reported:`, each of the form `departure not reported: <file>: "<exact quote>": <the problem>`: team-rule departures the reviewer left out of its findings because they cost nothing in this change. Otherwise there are none to count.
 
 Its Findings' `verdict` line decides what follows. `findings`: go to step 6. `holds`: the merged list is the final list; go to step 7 with no second pass. No Findings with a `verdict` line, because the reviewer did not return or returned something else: the merged list is the final list, the verdict is that the wave review did not return, and there is no second pass; go to step 7.
 
@@ -106,7 +110,7 @@ Each entry of the reviewer's Findings block is a **reviewer finding**: a file, a
 
 ### 6a. Sort
 
-A reviewer finding is a **contradiction** when it names a finding of the merged list, by its file and lines or by its message, and says it is wrong: in its claim, its lines or its severity. Any other reviewer finding is **new**. Give each a lens: for a contradiction, the lens of the finding it contradicts; for a new one, the lens whose kind of problem it names, by `lenses.md`'s own words.
+A reviewer finding is a **contradiction** when it names a finding of the merged list, by its file and lines or by its message, and says it is wrong: in its claim, its lines or its severity. Any other reviewer finding is **new**. A reviewer finding whose quote, found in its file at head, lies outside the lines of every merged finding in that file is new, even when its problem names a finding of the merged list at another place of the same defect, unless it says that finding is wrong, which makes it a contradiction. Give each a lens: for a contradiction, the lens of the finding it contradicts; for a new one, the lens whose kind of problem it names, by `lenses.md`'s own words.
 
 ### 6b. Budget
 
@@ -116,7 +120,7 @@ A **budget note** is any line of the form `USD budget: $<spent>/$<cap>; $<remain
 
 When the budget allows and at least one finding of the merged list is contradicted, launch again the arms of those findings' lenses, and no other, all in one message, each with the prompt of step 3 and, added to it:
 
-- the reviewer's Findings block, quoted whole;
+- the reviewer's Findings block, quoted whole, with the sentence, verbatim, "Leave alone every unsure entry of these Findings that begins `departure not reported:`; it is not a finding, so neither anchor it nor keep it.";
 - the whole merged list from step 4, quoted in the arm block's shape, from which the arm takes as its own the entries whose category its lens carries.
 
 Each relaunched arm returns the whole list for its lens, which replaces its first-pass list. Relaunch a failed arm once, as step 4 says; an arm that fails again keeps its first-pass list, and its lens is named as failed in this pass. When no finding is contradicted, or the budget stopped it, there is no second pass.
@@ -138,21 +142,30 @@ For an arm that failed its relaunch, keep its first-pass list, fold the new revi
 
 ### 6e. Merge
 
-Merge as step 4 says, from normalising to the cap of 40, over three sets: the findings of the merged list whose lens's arm was not relaunched or failed its relaunch, as they stand after step 6d's settling, not those arms' first-pass blocks, which the first merge already took; every entry of the second-pass blocks of the relaunched arms that returned one; and the folded findings. A folded finding so passes the head check, collapses with a duplicate as `--duplicates` says, and is ordered and cut like any other, a low one first. This merge's candidates are those three sets; what its head check and duplicate collapse drop and what its cap drops are counted apart, as in step 4.
+Merge as step 4 says, from normalising to ordering, over three sets: the findings of the merged list whose lens's arm was not relaunched or failed its relaunch, as they stand after step 6d's settling, not those arms' first-pass blocks, which the first merge already took; every entry of the second-pass blocks of the relaunched arms that returned one; and the folded findings. A folded finding so passes the head check, collapses with a duplicate as `--duplicates` says, and is ordered like any other. This merge's candidates are those three sets; what its head check and duplicate collapse drop are counted as removed by the merge, as in step 4.
 
 The counts then cover the whole review, each finding counted once and in exactly one of them:
 
 - **Pairing.** Take each relaunched arm's second-pass entries in the order of its block, and pair each with at most one entry of that arm's own first-pass block at the same file with an overlapping line range: one still in the merged list before one step 4 dropped, then the one overlapping it on the most lines, then the first in the block. Each first-pass entry is paired at most once. A paired second-pass entry is that first-pass finding returned again, not a new candidate; an unpaired one is new.
 - **Candidates** is every entry the arms returned in the first pass, plus every unpaired second-pass entry, plus every folded finding.
 - **Removed by the review** is the number of findings of the merged list that step 6 removed: a contradicted finding step 6d's settling removed, and a finding of an arm that returned a second-pass block with no second-pass entry paired with it, which the arm withdrew. A finding of an arm that failed its relaunch is not withdrawn: it stands as step 6d's settling leaves it, in this merge's first set.
-- **Removed by the merge** is the number of candidates the head check or the duplicate collapse dropped, and **removed by the cap** the number the cap of 40 dropped, each summed over step 4's merge and this one. A finding is counted only at the last merge that held it: one step 4 dropped that a relaunched arm returns again is no longer counted at step 4, but where this merge leaves it.
+- **Removed by the merge** is the number of candidates the head check or the duplicate collapse dropped, summed over step 4's merge and this one. A finding is counted only at the last merge that held it: one step 4 dropped that a relaunched arm returns again is no longer counted at step 4, but where this merge leaves it.
 
-They add up: the candidates are the final list plus removed by the merge, by the cap and by the review.
+They add up: the candidates are the final list plus removed by the merge and by the review.
 
 This is the one second pass: no third launch of the arms and no second wave review, whatever the merge holds. The skill skips neither the fold nor a second pass the budget allows for any reason of its own about cost or time; only a budget note as step 6b reads it stops a second pass, and nothing stops the fold.
 
 ## 7. Report
 
-Without `--json`, reply with the final list, high first, one finding per line as `<severity> <category> <file>:<start_line>-<end_line> <message>`, or "No findings." when the list is empty. After it, one count line: the candidates, as step 4 counts them or, after a wave review that returned findings, as step 6e does, the number the merge removed, the number removed by the review, the wave review's verdict (`holds`, `findings`, or that it did not return or did not run), and each failed arm by its lens and pass, or that none failed; then `folded <n>, not anchored <n>, relaunched <lens, ...>` or `relaunched none`, `cut by the cap <n>` with removed by the cap, and `budget stopped the second pass` when step 6b says it did. When the wave review held, did not return or did not run, nothing is folded and nothing relaunched.
+Without `--json`, reply with the final list, high first, one finding per line as `<severity> <category> <file>:<start_line>-<end_line> <message>`, or "No findings." when the list is empty. After it, one count line: the candidates, as step 4 counts them or, after a wave review that returned findings, as step 6e does, the number the merge removed, the number removed by the review, the wave review's verdict (`holds`, `findings`, or that it did not return or did not run), and each failed arm by its lens and pass, or that none failed; then `folded <n>, not anchored <n>, relaunched <lens, ...>` or `relaunched none`, then, when the wave review returned Findings, whether they hold or have findings, `departures not reported <n>` with step 5's count, 0 when there are none; and `budget stopped the second pass` when step 6b says it did. When the wave review held, did not return or did not run, nothing is folded and nothing relaunched; when it did not return or did not run, the count line has no `departures not reported`.
 
-With `--json`, write the final findings object to the path, in step 4's shape with `pass` `"final"`, `verdict` `"holds"`, `"findings"` or `null` when the wave review did not return or did not run, `second_pass` `true` when at least one arm was relaunched and `false` otherwise, and the final counts, `removed_by_cap` among them, and list, folded findings included, with the six fields of an arm's entry; then reply with the path and the count line alone.
+With `--json`, write the final findings object to the path, in step 4's shape with `pass` `"final"`, `verdict` `"holds"`, `"findings"` or `null` when the wave review did not return or did not run, `second_pass` `true` when at least one arm was relaunched and `false` otherwise, and the final counts, `departures_not_reported` the count line's number, 0 when the wave review did not return or did not run; `folded` and `not_anchored` the count line's numbers and `relaunched` its lenses as a list, 0, 0 and `[]` when the wave review held, did not return or did not run, and `relaunched` `[]` when the count line says relaunched none; and the final list, folded findings included, with the six fields of an arm's entry. Beside `findings`, `not_reported` lists what the review left out, each entry with `file`, `quote`, `problem` and `reason`, and `null` for a file or quote the entry does not give:
+
+- each departure not reported, with the file, quote and problem its entry gives, and `reason` `team-rule departure without cost`;
+- each other `unsure` entry of the reviewer's Findings but `nothing`, with its file and quote when it names them, its text as the problem, and `reason` `unsettled lead`;
+- each reviewer finding step 6d counts as not anchored, with its file, quote and problem as the reviewer returned them, and `reason` `not anchored`;
+- each new reviewer finding step 6d gave to a relaunched arm that returned a second-pass list, when that list does not hold it at its file on lines that hold its quote, with its file, quote and problem as the reviewer returned them, and `reason` `dropped by relaunched arm`.
+
+To read a departure entry, take the text after `departure not reported: ` and split it at its first `: "` and its last `": `: the file is before the first, the quote between the two, and the problem after the last.
+
+`not_reported` is `[]` when the wave review did not return or did not run, and none of its entries is ever in `findings`. Then reply with the path and the count line alone.

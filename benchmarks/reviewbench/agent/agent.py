@@ -49,12 +49,16 @@ POLL_SECONDS = 2
 FINDINGS_SHAPE = (
     '{"pass": "first" or "final", "verdict": "holds", "findings" or null, '
     '"second_pass": true or false, "counts": {"candidates": integer, '
-    '"removed_by_merge": integer, "removed_by_cap": integer, '
-    '"removed_by_review": integer, '
+    '"removed_by_merge": integer, '
+    '"removed_by_review": integer, "departures_not_reported": integer, "folded": integer, '
+    '"not_anchored": integer, "relaunched": [string], these four only when "pass" is "final", '
     '"failed_arms": [string]}, "findings": [{"file": string, '
     '"start_line": integer, "end_line": integer, '
     '"severity": "high", "medium" or "low", "category": string, '
-    '"message": string}]}'
+    '"message": string}], "not_reported": [{"file": string or null, '
+    '"quote": string or null, "problem": string, '
+    '"reason": "team-rule departure without cost", "unsettled lead", '
+    '"not anchored" or "dropped by relaunched arm"}]}'
 )
 
 
@@ -454,7 +458,7 @@ def repair_prompt(review_path, text, error, refused):
         "{shape}\n\n"
         "{problem}\n\n"
         "Its text is:\n{text}\n\n"
-        "Write the file again at {path} in that shape, keeping its findings, "
+        "Write the file again at {path} in that shape, keeping its findings and its not_reported list, "
         "and do nothing else.\n"
     ).format(path=review_path, shape=FINDINGS_SHAPE, problem=problem, text=text)
 

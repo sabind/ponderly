@@ -309,43 +309,74 @@ findings, each anchored to lines at the head.
   ones.
 - **What it does:** it reads its lenses file,
   `plugins/ponderly/skills/review/lenses.md`, whose `##` sections are the
-  lenses: correctness, reliability, security, maintainability and testing.
-  It launches one `review-arm` agent per lens, all at the same time. It
-  merges what they return: it drops a finding whose file or lines do not
-  exist at the head, collapses duplicates, orders high, medium, low and
-  keeps at most 40. `--duplicates` sets how duplicates collapse:
-  `same-defect`, the default, merges two findings in one file only when they
-  name the same defect and the same fix, keeping the fuller message with its
-  own lines; `overlap` also merges two whose line ranges overlap; `keep`
-  merges none, so two lenses that report the same lines give two findings. An arm that returns nothing in the right shape is
-  relaunched once, then named as failed. The wave review comes next: the
-  `wave-reviewer` agent reads the change with the merged findings quoted,
-  judging style, structure, comments and tests against the repository's own
-  bar. When it returns findings, each one that names a problem the list does
-  not hold is folded into the list, anchored at the lines at the head that
-  hold its quote, unless that lens's arm is run again; one whose quote is not
-  found is left out and counted. The second pass runs once more only the arms
-  whose findings the wave review contradicted, with the wave review's
-  findings, and each keeps, withdraws or adds to its own list; a
-  contradiction no arm reruns for is settled by reading the code it quotes.
-  The second pass runs only when the budget allows: when the latest budget
-  line, whether Claude Code shows it or the session's prompt carries it,
-  shows less remaining than spent, no arm runs again and every
-  wave-review finding is folded or settled instead. The fold and the second
-  pass then go through the same merge, so a folded finding is checked,
-  collapsed, ordered and cut like any other. There is only one second pass.
+  lenses: correctness, reliability, security, maintainability, documentation
+  and testing. It launches one `review-arm` agent per lens, all at the same
+  time. The documentation arm reads each changed prose and configuration file
+  and searches the repository for documentation naming what the change
+  renamed, removed or altered. Each arm puts a finding at each place a defect
+  needs its own edit, in whatever file it is, each naming the others; when an
+  edit at either of two places alone would fix it, the arm puts one at the
+  place the pull request changed, at each when it changed both, or next to the
+  removal when it changed neither. The skill merges what the arms return: it
+  drops a finding whose file or lines do not exist at the head, collapses
+  duplicates and orders high, medium, low. No merge drops a verified finding
+  for its severity or the list's length.
+  `--duplicates` sets how duplicates collapse: `same-defect`, the default,
+  merges two findings in one file only when they name the same defect and the
+  same fix, keeping the fuller message with its own lines, and never merges
+  two findings that name each other's file and line; `overlap` also
+  merges two whose line ranges overlap; `keep` merges none, so two lenses that
+  report the same lines give two findings. An arm that returns nothing in the
+  right shape is relaunched once, then named as failed. The wave review comes
+  next: the `wave-reviewer` agent reads the change with the merged findings
+  quoted, judging style, structure, comments and tests against the
+  repository's own bar: what its `CLAUDE.md`, `AGENTS.md`, files under
+  `.claude/rules/` and contributing guide say and the code around the change
+  already does. It leaves out a team-rule departure with no concrete cost in
+  the change, unless the change also departs from that bar, and the skill
+  counts each one it left out. Apart from those, it is told to report a
+  problem at each place that needs its own edit, and one that an edit at
+  either of two places would fix at the place the pull request changed, at
+  each when it changed both, or next to the removal when it changed neither: one entry per place with its
+  own quote, never other places listed inside one entry, and such a set is
+  not a duplicate. A problem it can quote at the head is a finding, with any
+  doubt stated together with what would settle it, a file to read or a case
+  to run; a doubtful problem with no way to settle it, or one it cannot
+  quote, goes under `unsure`. Each arm's notes under `unsure` that begin
+  `outside lens:` are passed to it as leads to verify. When it returns
+  findings, each one that names a problem the list does not hold, or that
+  sits at a place the list has no finding for even when the list holds the
+  same defect at another place, is folded into the list, anchored at the
+  lines at the head that hold its quote, unless that lens's arm is run again;
+  one whose quote is not found is left out and counted. The second pass runs
+  once more only the arms whose findings the wave review contradicted, with
+  the wave review's findings, and each keeps, withdraws or adds to its own
+  list; a contradiction no arm reruns for is settled by reading the code it
+  quotes. The second pass runs only when the budget allows: when the latest
+  budget line, whether Claude Code shows it or the session's prompt carries
+  it, shows less remaining than spent, no arm runs again and every wave-review
+  finding is folded or settled instead. The fold and the second pass then go
+  through the same merge, so a folded finding is checked, collapsed and
+  ordered like any other. There is only one second pass.
 - **What it asks:** nothing; every input comes from the arguments and the
   repository.
 - **What it writes:** in a session, one line per finding, such as
   `high correctness src/cart.py:41-44 <message>`, then a count line: the
-  candidates the arms produced, how many the merge, the cap of 40 and the
-  wave review removed, which add up with the final list to the candidates,
+  candidates the arms produced, how many the merge and the wave review
+  removed, which add up with the final list to the candidates,
   the wave review's verdict, any failed arm, how many wave-review findings
   were folded and how many could not be anchored, which arms ran again or
-  that none did, and whether the budget stopped the second pass. With `--json <path>`, it writes the same findings and counts as
+  that none did, how many team-rule departures the wave review left out as
+  `departures not reported`, and whether the budget stopped the second pass.
+  With `--json <path>`, it writes the same findings and counts as
   JSON to that path, which must be outside the repository, and replies with
-  the path and the count line. It changes no file in the repository and
-  commits nothing.
+  the path and the count line; the counts include `folded`, `not_anchored`
+  and `relaunched`. Beside the findings, the JSON file holds a
+  `not_reported` list of what the review left out, each entry with its file,
+  quote, problem and the reason: a team-rule departure without cost, a lead
+  the wave review left unsettled, a wave-review finding that could not be
+  anchored, or one a relaunched arm dropped. It changes no file in the
+  repository and commits nothing.
 - **Hands off to:** nothing; you decide what to do with the findings.
 
 ### pr
@@ -470,7 +501,9 @@ changes nothing.
   over the whole run when you chose to hand back only at the end;
   `readable-code`, once over its readability pass; and `tighten-tests`, once
   over the slimmed tests, to find any requirement left with no test; and
-  `review`, once per review, with the merged findings quoted.
+  `review`, once per review, with the merged findings quoted, the instruction
+  to report a problem at each place with its own quote, and the arms'
+  outside-lens leads.
 - **What the prompt carries:** the files that changed, or a git range; the
   requirement or design text they implement, if any; the files that cite
   them; and, when they come from a spec, the sentence "These changes come
@@ -478,9 +511,12 @@ changes nothing.
   missing test is a finding. From `review`, it carries instead the sentence
   that the changes are a pull request reviewed for the review skill: then it
   judges style, structure, comments and tests against the repository's own
-  bar, its `CLAUDE.md`, its contributing guide and the code around the
-  change, as well as the team rules, and reports a team-rule departure with
-  no concrete cost in the change as a `nit`. A departure with a concrete cost
+  bar, what its `CLAUDE.md`, `AGENTS.md`, files under `.claude/rules/` and
+  contributing guide say and the code around the change already does, as
+  well as the team rules. A team-rule departure with no concrete cost in the
+  change is not a finding: it leaves it out and lists it under `unsure` as a
+  departure not reported. A departure from the repository's own bar with no
+  concrete cost is still a `nit`. A departure with a concrete cost
   gets the severity that cost would get if no team rule were named, so
   breaking the team rule does not by itself make it a `blocker`. Every other
   launch holds the changes to the team rules alone.
@@ -508,9 +544,15 @@ changes nothing.
 
 Reviews one pull request through one lens, such as correctness or security.
 It gathers the diff itself, verifies each problem against the code at the
-head, and changes nothing. Its bar for style, comments and tests is the
-repository's own conventions, not the handbook rules; a departure from a rule
-is a finding only when it costs the change something concrete.
+head, and changes nothing. Its bar for style, structure, comments and tests
+is the repository's own: what its `CLAUDE.md`, `AGENTS.md`, files under
+`.claude/rules/` and contributing guide say and the code around the change
+already does, not the handbook rules; a departure from a rule
+is a finding only when it costs the change something concrete. It puts a
+finding at each place a defect needs its own edit, sweeps the other changed
+files and the call sites it read for copies of a defect that comes from a
+pattern, and reads a function or endpoint the change newly depends on from its
+signature through every guard before the branch the change uses.
 
 - **Launched by:** the `review` skill, once per lens of its lenses file, all
   at the same time, and once more for the second pass only for a lens whose
@@ -525,7 +567,8 @@ is a finding only when it costs the change something concrete.
   `file`, a `start_line` and `end_line` at the head, a `severity` (`high`,
   `medium` or `low`), a `category` its lens carries and a one-line
   `message` saying what is wrong, why it matters and what would fix it; then
-  what it is `unsure` of.
+  what it is `unsure` of, where each problem it noticed outside its lens is an
+  entry that begins `outside lens:` and names its file and line.
 
 ### The report protocol
 

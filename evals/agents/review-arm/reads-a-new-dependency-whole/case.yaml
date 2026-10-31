@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: reads-a-new-dependency-whole
+context:
+  scaffold_script: scaffold.sh

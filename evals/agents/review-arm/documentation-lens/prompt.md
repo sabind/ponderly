@@ -1,0 +1,28 @@
+---
+description: 'Launched by its namespaced name with the documentation lens on the clamp fixture''s branch main, whose uncommitted clamp/cli.py renames the --high option to --max while the committed README.md example still runs python3 -m clamp.cli 150 --high 120, review-arm returns its arm block for the documentation lens with a finding on clamp/cli.py that names the README.md example and --max. Requirement 4.2. Needs the Makefile''s review-arm target, which grants Bash, runs the scaffold and puts the wrappers in bin on the PATH.'
+tags: [agent, review-arm]
+max_turns: 20
+allowed_tools: [Read, Glob, Grep, Agent]
+expected_outcome: 'Claude launches one sub-agent with subagent_type ponderly:review-arm, giving it the shared standard, the documentation lens, the range and the changed file, and does nothing else itself. The sub-agent runs git diff main -- clamp/cli.py, lists --high as the option the change renames, searches the repository for it, finds the README.md example python3 -m clamp.cli 150 --high 120, and returns an arm block beginning lens: documentation with a documentation finding on the changed lines of clamp/cli.py whose message names the README.md example and the new option --max. Claude''s reply is that arm block verbatim.'
+---
+Launch one sub-agent with the Agent tool, `subagent_type` `ponderly:review-arm`, and give it exactly this prompt:
+
+```text
+Shared standard, quoted:
+"Across every lens, a finding worth reporting is one a competent senior reviewer would expect the author to address before merge: true and verifiable against the code at head, a real concern that would improve the change, and specific enough to act on. A finding not worth reporting is an incorrect or unverifiable claim, a duplicate, a style nit below the project's bar, or advice that would not improve the change or would make it worse. A pre-existing problem in a touched file counts when it is verifiable. A finding sits where a change is needed. When a defect needs its own edit at several places, because each is wrong on its own, such as a stub and the interface it lacks or one mistake copied into several places, write one finding at each place you verified at head, in whatever file it is, touched or not, and one at each copy in the same file. When an edit at either of two places alone would fix the defect, such as a new call into a handler whose guard does not serve that call, or code and a document, configuration or manifest that now disagree, write one finding at the place the pull request changed, or one at each when it changed both, and when it changed neither side's lines, as when it only removed code, on the lines next to the removal. Each such finding names the file and line of the others, or of the other place when there is one finding, and never describes another place's defect as a sentence in place of a finding of its own; a place you suspect but have not verified at head is no finding and goes under unsure. A message describes one defect and no aside restating a claim you did not verify: a second defect, even on the same lines, is a finding of its own."
+
+Lens, quoted:
+"## documentation
+
+This lens looks at the text a reader acts on: every Markdown file, template, help text, changelog, documentation page, workflow or configuration file the change touches, read in full at head, and the documentation elsewhere that the change makes untrue. In those files it looks for text that contradicts the code or the commands it describes, broken markup such as unmatched tags, bad links and malformed front matter, examples that would not run as written, and typos, wrong terms and unprofessional wording in user-facing text, interface labels and help strings included. For documentation the change makes stale, list each symbol, option, command, path or file the change renames, removes or alters, search the repository for each name, and judge only the text, comments and docstrings included, that names one of them; a comment or docstring that no longer matches code that is right is this lens's, and code that does not do what its docstring says is the correctness lens's. Do that search even when the change touches none of those files, and do not read every documentation file in the repository. It carries the category `documentation`. A true positive quotes the sentence and says what it contradicts at head or what a reader does wrong because of it; an example that would not run as written, text that tells a reader to do the wrong thing, markup that hides content, and a broken link in a quickstart or install path are medium, any other broken link and a typo or wrong term are low, and only text whose instructions lose data or break a user's setup is high. A false positive is a style preference or a rewording with no reader cost. A change to a workflow or configuration file that breaks or weakens the build or CI, such as a step that runs a script the change renamed, belongs to the reliability lens; this lens takes such a file's comments, names and descriptions only where they contradict the commands or code they name."
+
+Range: base main, head the working tree.
+
+Changed files:
+- clamp/cli.py
+
+Pull request title: Rename the clamp command's --high option to --max
+Pull request body: none given
+```
+
+Do nothing else yourself: do not read, run or check anything, do not answer anything the sub-agent asks, and do not launch it again; I cannot answer questions during this run. When the sub-agent returns, reply with its arm block verbatim, the whole of it and nothing else.

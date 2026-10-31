@@ -21,7 +21,6 @@ findings = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(findings)
 
 ITERATIONS = 100
-LIMIT = 40
 SEVERITIES = ("high", "medium", "low")
 
 HEAD_TREE = {
@@ -126,10 +125,10 @@ class EveryFindingIsAnchoredInTheHeadTree(unittest.TestCase):
                 self.assertLessEqual(finding["end_line"], HEAD_TREE[finding["file"]])
 
 
-class TheOutputIsBoundedAndOrdered(unittest.TestCase):
-    """Property 2: The output is bounded and ordered."""
+class TheOutputKeepsEveryValidFindingInOrder(unittest.TestCase):
+    """Property 2: The output is kept and ordered."""
 
-    def test_at_most_forty_in_severity_order_with_the_lowest_dropped_first(self):
+    def test_every_valid_finding_is_kept_in_severity_order(self):
         rng = random.Random(0)
         for _ in range(ITERATIONS):
             generated = [random_candidate(rng) for _ in range(rng.randint(0, 90))]
@@ -137,15 +136,8 @@ class TheOutputIsBoundedAndOrdered(unittest.TestCase):
             valid = [item for item, is_valid in generated if is_valid]
             kept, _dropped = validate(candidates)
             ranks = [SEVERITIES.index(finding["severity"]) for finding in kept]
-            self.assertLessEqual(len(kept), LIMIT)
+            self.assertEqual(len(kept), len(valid))
             self.assertEqual(ranks, sorted(ranks))
-            if len(valid) > LIMIT:
-                self.assertEqual(len(kept), LIMIT)
-                lowest_kept = max(ranks)
-                for severity in SEVERITIES[:lowest_kept]:
-                    valid_of_severity = [item for item in valid if item["severity"] == severity]
-                    kept_of_severity = [item for item in kept if item["severity"] == severity]
-                    self.assertEqual(len(kept_of_severity), len(valid_of_severity))
 
 
 class TheFindingsFileEchoesTheContractsIdentity(unittest.TestCase):
@@ -208,19 +200,12 @@ class ValidateLines(unittest.TestCase):
         self.assertEqual(len(kept), 1)
 
 
-class ValidateLimit(unittest.TestCase):
-    def test_forty_valid_findings_are_all_kept_and_none_counted_over_the_limit(self):
-        kept, dropped = validate([candidate(start_line=line, end_line=line) for line in range(1, 41)])
-        self.assertEqual(len(kept), 40)
-        self.assertEqual(dropped["over_limit"], 0)
-
-    def test_forty_one_valid_findings_drop_the_one_of_lowest_severity(self):
+class ValidateKeepsEveryFinding(unittest.TestCase):
+    def test_forty_one_valid_findings_are_all_kept_with_the_highs_first(self):
         highs = [candidate(start_line=line, end_line=line) for line in range(1, 41)]
         low = candidate(start_line=99, end_line=99, severity="low")
-        kept, dropped = validate([low] + highs)
-        self.assertEqual(len(kept), 40)
-        self.assertNotIn(low, kept)
-        self.assertEqual(dropped["over_limit"], 1)
+        kept, _dropped = validate([low] + highs)
+        self.assertEqual(kept, highs + [low])
 
     def test_an_empty_list_gives_no_findings_and_no_drops(self):
         kept, dropped = validate([])
