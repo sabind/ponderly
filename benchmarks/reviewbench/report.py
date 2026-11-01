@@ -182,6 +182,15 @@ def is_count(value):
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def recorded_total_line(label, readable, field):
+    recorded = [review["counts"][field] for review in readable if is_count(review["counts"].get(field))]
+    if not recorded:
+        return "- {}: not recorded in this run's review files".format(label)
+    return "- {}: {} on {} pull request(s) (recorded by {} of {} review files)".format(
+        label, sum(recorded), sum(1 for number in recorded if number > 0), len(recorded), len(readable)
+    )
+
+
 def is_readable_review(review):
     if not isinstance(review, dict):
         return False
@@ -236,22 +245,40 @@ def health_section(reviews, findings_count):
             lost_an_arm += 1
         for lens in lenses:
             failed_lenses[lens] = failed_lenses.get(lens, 0) + 1
+    relaunched_lenses = {}
+    for review in readable:
+        relaunched = review["counts"].get("relaunched")
+        if not isinstance(relaunched, list):
+            continue
+        for lens in set(str(lens) for lens in relaunched):
+            relaunched_lenses[lens] = relaunched_lenses.get(lens, 0) + 1
     lines = heading + [
         "Each pull request's review file records what the review skill did: whether the wave review held the "
         "findings, whether a second pass relaunched arms, which arms failed and how many candidates the merge "
         "and the wave review removed. A review file that does not parse, or lacks any of those fields, is counted "
         "as unreadable and left out of every other line. A review that failed keeps its review file but writes "
-        "no findings file, so the review-file count can exceed the findings-file count.",
+        "no findings file, so the review-file count can exceed the findings-file count. Review files from later "
+        "runs also record which lenses the second pass relaunched, how many wave reviewer findings were folded "
+        "into the review or could not be anchored, and how many team-rule departures were not reported; older "
+        "files lack these counts, so each of those lines says how many review files record it, and a count of "
+        "the wrong type is left out of its line.",
         "",
         "- Pull requests with a readable review file: {}".format(len(readable)),
         "- Unreadable review files: {}".format(unreadable_count),
         "- Findings files: {}".format(findings_count),
         "- Wave review held: {}; returned findings: {}; no verdict: {}".format(holds, findings, no_verdict),
         "- Second pass relaunched arms: {}".format(second_passes),
-        "- Lost at least one arm: {}".format(lost_an_arm),
     ]
+    for lens in sorted(relaunched_lenses):
+        lines.append("  - {}: relaunched on {}".format(lens, relaunched_lenses[lens]))
+    lines.append("- Lost at least one arm: {}".format(lost_an_arm))
     for lens in sorted(failed_lenses):
         lines.append("  - {}: failed on {}".format(lens, failed_lenses[lens]))
+    lines += [
+        recorded_total_line("Wave reviewer findings folded", readable, "folded"),
+        recorded_total_line("Wave reviewer findings not anchored", readable, "not_anchored"),
+        recorded_total_line("Team-rule departures not reported", readable, "departures_not_reported"),
+    ]
     if readable:
         candidates = [review["counts"]["candidates"] for review in readable]
         removed_by_merge = [review["counts"]["removed_by_merge"] for review in readable]

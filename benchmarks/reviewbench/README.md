@@ -98,8 +98,12 @@ Overall, By severity, By category, Duration and cost, and Review health. Review
 health counts, from the `review.json` files, the readable and unreadable review
 files and the findings files, how often the wave review held the findings,
 returned findings or gave no verdict, how often a second pass relaunched
-arms, which lenses lost an arm, the mean and largest number of candidates, and
-the mean number of findings removed by the merge and by the wave review.
+arms and which lenses it relaunched, which lenses lost an arm, the mean and
+largest number of candidates, the mean number of findings removed by the merge
+and by the wave review, and the totals of wave reviewer findings folded and not
+anchored and of team-rule departures not reported. Older review files lack
+those last counts; each such line says how many review files record it, or that
+none do.
 
 ## Variables
 

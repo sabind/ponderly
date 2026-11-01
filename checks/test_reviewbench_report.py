@@ -3,7 +3,8 @@
 The report states each metric group of the judge's results, computes grounded
 F1, sums the model cost Claude Code reported, names the run's settings from
 ``run.json`` or says they are unknown, counts the review files' verdicts, second
-passes, failed arms and candidates in its review health section, and exits 1
+passes, relaunched and failed arms, candidates and the final pass's folded,
+not-anchored and unreported-departure counts in its review health section, and exits 1
 naming the judge target when the judge's results file is absent.
 """
 
@@ -51,12 +52,12 @@ def results_with_every_group():
         "macro": {
             "overall": overall,
             "by_severity": {"high": metrics(0.5, 0.5, 2)},
-            "by_category": {"logic": metrics(0.5, 0.5, 3)},
+            "by_category": {"correctness": metrics(0.5, 0.5, 3)},
         },
         "micro": {
             "overall": overall,
             "by_severity": {"high": metrics(0.5, 0.5, 2)},
-            "by_category": {"logic": metrics(0.5, 0.5, 3)},
+            "by_category": {"correctness": metrics(0.5, 0.5, 3)},
         },
     }
 
@@ -128,7 +129,7 @@ class ReviewBenchReportTest(unittest.TestCase):
         self.assertEqual(printed, written)
         overall_row = "| macro | overall | 50.0% | 50.0% | 50.0% | 25.0% | 75.0% | 37.5% | 6 |"
         severity_row = "| micro | high | 50.0% | 50.0% | 50.0% | 25.0% | 75.0% | 37.5% | 2 |"
-        category_row = "| macro | logic | 50.0% | 50.0% | 50.0% | 25.0% | 75.0% | 37.5% | 3 |"
+        category_row = "| macro | correctness | 50.0% | 50.0% | 50.0% | 25.0% | 75.0% | 37.5% | 3 |"
         self.assertIn(overall_row, written)
         self.assertIn(severity_row, written.split("## By severity")[1].split("## By category")[0])
         self.assertIn(category_row, written.split("## By category")[1])
@@ -280,6 +281,54 @@ class ReviewBenchReportTest(unittest.TestCase):
             health,
         )
         self.assertNotIn("removed by the cap", health)
+
+    def test_final_review_files_with_the_four_final_pass_counts_print_totals_and_relaunched_lens_lines(self):
+        first = review_file("findings", True, 10, 2, 3, [])
+        first["counts"].update({"folded": 3, "not_anchored": 1, "relaunched": ["security", "correctness"],
+                                "departures_not_reported": 2})
+        second = review_file("findings", True, 8, 1, 2, [])
+        second["counts"].update({"folded": 4, "not_anchored": 0, "relaunched": ["security"],
+                                 "departures_not_reported": 0})
+        with tempfile.TemporaryDirectory() as folder:
+            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
+            write_json(run_dir / "logs" / "pr-0" / "review.json", first)
+            write_json(run_dir / "logs" / "pr-1" / "review.json", second)
+            health = health_text(run_dir)
+        self.assertIn(
+            "- Second pass relaunched arms: 2\n  - correctness: relaunched on 1\n  - security: relaunched on 2\n", health
+        )
+        self.assertIn("- Wave reviewer findings folded: 7 on 2 pull request(s) (recorded by 2 of 2 review files)", health)
+        self.assertIn(
+            "- Wave reviewer findings not anchored: 1 on 1 pull request(s) (recorded by 2 of 2 review files)", health
+        )
+        self.assertIn(
+            "- Team-rule departures not reported: 2 on 1 pull request(s) (recorded by 2 of 2 review files)", health
+        )
+
+    def test_an_older_review_file_without_the_final_pass_counts_stays_readable_and_prints_not_recorded(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
+            write_json(run_dir / "logs" / "pr-0" / "review.json", review_file("findings", True, 10, 2, 3, []))
+            health = health_text(run_dir)
+        self.assertIn("- Pull requests with a readable review file: 1", health)
+        self.assertIn("- Second pass relaunched arms: 1\n- Lost at least one arm: 0", health)
+        self.assertIn("- Wave reviewer findings folded: not recorded in this run's review files", health)
+        self.assertIn("- Wave reviewer findings not anchored: not recorded in this run's review files", health)
+        self.assertIn("- Team-rule departures not reported: not recorded in this run's review files", health)
+
+    def test_a_wrong_typed_final_pass_count_is_skipped_and_the_review_file_stays_readable(self):
+        wrong = review_file("findings", True, 10, 2, 3, [])
+        wrong["counts"].update({"folded": "3", "not_anchored": 1, "relaunched": [], "departures_not_reported": 0})
+        right = review_file("findings", True, 8, 1, 2, [])
+        right["counts"].update({"folded": 4, "not_anchored": 0, "relaunched": [], "departures_not_reported": 0})
+        with tempfile.TemporaryDirectory() as folder:
+            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
+            write_json(run_dir / "logs" / "pr-0" / "review.json", wrong)
+            write_json(run_dir / "logs" / "pr-1" / "review.json", right)
+            health = health_text(run_dir)
+        self.assertIn("- Pull requests with a readable review file: 2", health)
+        self.assertIn("- Unreadable review files: 0", health)
+        self.assertIn("- Wave reviewer findings folded: 4 on 1 pull request(s) (recorded by 1 of 2 review files)", health)
 
     def test_a_review_file_in_a_set_aside_before_folder_is_not_counted(self):
         with tempfile.TemporaryDirectory() as folder:
