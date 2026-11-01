@@ -301,12 +301,12 @@ findings, each anchored to lines at the head.
 - **When it applies:** you want a change read by a reviewer before merge,
   whether it came from a spec or not. It stops when a side of a
   `base...head` names no commit; when only one of the first two words names
-  a commit; when `--json` has no path or its path lies inside the
-  repository; when `--duplicates` is given a word other than `same-defect`,
-  `keep` or `overlap`; when the range has no diff; when the skill's `lenses.md` is
-  missing; or when the `review-arm` agent is missing. A missing
-  `wave-reviewer` does not stop it; the merged findings are then the final
-  ones.
+  a commit; when `--json` has no path or its path lies inside the repository
+  and git does not ignore it; when `--duplicates` is given a word other than
+  `same-defect`, `keep` or `overlap`; when the range has no diff; when the
+  skill's `lenses.md` is missing; or when the `review-arm` agent is missing.
+  A missing `wave-reviewer` does not stop it; the merged findings are then
+  the final ones.
 - **What it does:** it reads its lenses file,
   `plugins/ponderly/skills/review/lenses.md`, whose `##` sections are the
   lenses: correctness, reliability, security, maintainability, documentation
@@ -367,16 +367,21 @@ findings, each anchored to lines at the head.
   the wave review's verdict, any failed arm, how many wave-review findings
   were folded and how many could not be anchored, which arms ran again or
   that none did, how many team-rule departures the wave review left out as
-  `departures not reported`, and whether the budget stopped the second pass.
-  With `--json <path>`, it writes the same findings and counts as
-  JSON to that path, which must be outside the repository, and replies with
-  the path and the count line; the counts include `folded`, `not_anchored`
-  and `relaunched`. Beside the findings, the JSON file holds a
-  `not_reported` list of what the review left out, each entry with its file,
-  quote, problem and the reason: a team-rule departure without cost, a lead
-  the wave review left unsettled, a wave-review finding that could not be
-  anchored, or one a relaunched arm dropped. It changes no file in the
-  repository and commits nothing.
+  `departures not reported`, and whether the budget stopped the second pass;
+  after it, one line for each remark an arm made about the change as a
+  whole, which is never a finding.
+  With `--json <path>`, it writes the same findings and counts as JSON to
+  that path, which must be outside the repository or ignored by it, and
+  replies with the path, the count line and the remark lines; the counts
+  include `folded`, `not_anchored` and `relaunched`. Beside the findings, the
+  JSON file holds a `not_reported` list of what the review left out, each
+  entry with its file, quote, problem and the reason: a team-rule departure
+  without cost, a lead the wave review left unsettled, a wave-review finding
+  that could not be anchored, one a relaunched arm dropped, or an arm's
+  remark about the change as a whole, with reason `change remark`. It
+  changes no tracked file in the repository and commits nothing; the one
+  file it writes is the `--json` file, outside the repository or ignored by
+  it.
 - **Hands off to:** nothing; you decide what to do with the findings.
 
 ### pr
@@ -547,12 +552,13 @@ It gathers the diff itself, verifies each problem against the code at the
 head, and changes nothing. Its bar for style, structure, comments and tests
 is the repository's own: what its `CLAUDE.md`, `AGENTS.md`, files under
 `.claude/rules/` and contributing guide say and the code around the change
-already does, not the handbook rules; a departure from a rule
-is a finding only when it costs the change something concrete. It puts a
-finding at each place a defect needs its own edit, sweeps the other changed
-files and the call sites it read for copies of a defect that comes from a
-pattern, and reads a function or endpoint the change newly depends on from its
-signature through every guard before the branch the change uses.
+already does, not the handbook rules; a departure from a rule is a finding
+only when it costs the change something concrete. It puts a finding at each
+place a defect needs its own edit, sweeps the other changed files and the call
+sites it read for copies of a defect it verified that comes from a pattern,
+and reads a function or endpoint the change newly depends on from its
+signature through every guard before the branch the change uses; a remark
+about the change as a whole goes under `unsure`, never into a finding.
 
 - **Launched by:** the `review` skill, once per lens of its lenses file, all
   at the same time, and once more for the second pass only for a lens whose
@@ -568,7 +574,8 @@ signature through every guard before the branch the change uses.
   `medium` or `low`), a `category` its lens carries and a one-line
   `message` saying what is wrong, why it matters and what would fix it; then
   what it is `unsure` of, where each problem it noticed outside its lens is an
-  entry that begins `outside lens:` and names its file and line.
+  entry that begins `outside lens:` and names its file and line, and a remark
+  about the change as a whole is an entry that begins `change remark:`.
 
 ### The report protocol
 
@@ -795,12 +802,13 @@ The `start-task`, `implement-spec`, `bugfix`, `pr`, `readable-code`,
 `tighten-tests` and `review` skills and the `wave-reviewer` and `review-arm`
 agents run `git` on the current repository (status, diff, log, branch,
 rev-parse, merge-base, ls-files, show, `config --get`, `checkout -b`, in `pr`
-`remote get-url origin`, add and commit, and in `review` `cat-file`).
-`review` also runs `awk` to count a file's lines and to find the lines that
-hold a folded finding's quote, and writes one file, outside
-the repository, only when you give it `--json <path>`. Only `pr` reaches the remote with `git`, with `git fetch` and
-`git push` to the repository's own `origin`; beyond that, the skills reach
-GitHub only through the `gh` commands above.
+`remote get-url origin`, add and commit, and in `review` `cat-file` and
+`check-ignore`). `review` also runs `awk` to count a file's lines and to find
+the lines that hold a folded finding's quote, and writes one file, outside the
+repository or ignored by it, only when you give it `--json <path>`. Only `pr`
+reaches the remote with `git`, with `git fetch` and `git push` to the
+repository's own `origin`; beyond that, the skills reach GitHub only through
+the `gh` commands above.
 
 The `task-executor` agent runs the project's own tests for the code it
 changes. The `readable-code` and `tighten-tests` skills also run the project's

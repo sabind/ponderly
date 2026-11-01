@@ -51,14 +51,14 @@ FINDINGS_SHAPE = (
     '"second_pass": true or false, "counts": {"candidates": integer, '
     '"removed_by_merge": integer, '
     '"removed_by_review": integer, "departures_not_reported": integer, "folded": integer, '
-    '"not_anchored": integer, "relaunched": [string], these four only when "pass" is "final", '
+    '"not_anchored": integer, "relaunched": [string], '
     '"failed_arms": [string]}, "findings": [{"file": string, '
     '"start_line": integer, "end_line": integer, '
     '"severity": "high", "medium" or "low", "category": string, '
     '"message": string}], "not_reported": [{"file": string or null, '
     '"quote": string or null, "problem": string, '
     '"reason": "team-rule departure without cost", "unsettled lead", '
-    '"not anchored" or "dropped by relaunched arm"}]}'
+    '"not anchored", "dropped by relaunched arm" or "change remark"}]}'
 )
 
 

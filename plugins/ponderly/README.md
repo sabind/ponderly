@@ -86,9 +86,10 @@ The `start-task`, `implement-spec`, `bugfix`, `pr`, `readable-code`,
 `tighten-tests` and `review` skills and the `wave-reviewer` and `review-arm`
 agents run `git` on the current repository (status, diff, log, branch,
 rev-parse, merge-base, ls-files, show, `config --get`, `checkout -b`, in `pr`
-`remote get-url origin`, add and commit, and in `review` `cat-file`).
-`review` also runs `awk` to count a file's lines, and writes one file, outside
-the repository, only when you give it `--json <path>`. Only `pr` reaches the remote with `git`, with `git fetch` and
+`remote get-url origin`, add and commit, and in `review` `cat-file` and
+`check-ignore`). `review` also runs `awk` to count a file's lines, and writes
+one file, outside the repository or ignored by it, only when you give it
+`--json <path>`. Only `pr` reaches the remote with `git`, with `git fetch` and
 `git push` to the repository's own `origin`; beyond that, the skills reach
 GitHub only through the `gh` commands above.
 

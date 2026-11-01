@@ -1,15 +1,15 @@
 ---
 name: review
-description: Review a pull request and return line-anchored findings. Use when asked to review this branch, review this pull request, review these commits or review a base...head range. Takes the range from the argument, or the branch's merge base with the default branch up to the working tree when there is none, launches one review-arm agent per lens in its lenses file, all at once, and merges what they return. The merge relaunches once an arm whose block is missing or malformed, then drops it and names its arm, checks every finding's file and lines at the head, collapses duplicates as --duplicates says, and orders high, medium, low. Has the wave-reviewer agent read the change with the merged findings quoted, folds its findings into the list, and reruns only arms it contradicted, when the budget allows. Returns the findings with their counts and the wave review's verdict, or writes them as JSON to a path outside the repository with --json. Changes no file in the repository and commits nothing.
+description: Review a pull request and return line-anchored findings. Use when asked to review this branch, review this pull request, review these commits or review a base...head range. Takes the range from the argument, or the branch's merge base with the default branch up to the working tree when there is none, launches one review-arm agent per lens in its lenses file, all at once, and merges what they return. The merge relaunches once an arm whose block is missing or malformed, then drops it and names its arm, checks every finding's file and lines at the head, collapses duplicates as --duplicates says, and orders high, medium, low. Has the wave-reviewer agent read the change with the merged findings quoted, folds its findings into the list, and reruns only arms it contradicted, when the budget allows. Returns the findings with their counts and the wave review's verdict, or writes them as JSON to a path outside the repository, or ignored by it, with --json. Changes no tracked file in the repository and commits nothing.
 argument-hint: "[base...head] [--json <path>] [--duplicates same-defect|keep|overlap]"
-allowed-tools: Bash(git status *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git diff *) Bash(git show *) Bash(git ls-files *) Bash(git log *) Bash(git cat-file *) Bash(awk *)
+allowed-tools: Bash(git status *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git diff *) Bash(git show *) Bash(git ls-files *) Bash(git check-ignore *) Bash(git log *) Bash(git cat-file *) Bash(awk *)
 ---
 
 # Review a pull request
 
 Review one pull request: find its range, have one `review-arm` read it through each lens of `${CLAUDE_SKILL_DIR}/lenses.md`, all at the same time, merge their findings into one list anchored to lines at the head, have the `wave-reviewer` read the change with that list quoted, fold what it finds into the list and run once more only the arms whose findings it contradicted, when the budget allows, and return the final list with its counts.
 
-The skill reads; it changes no file in the repository, commits nothing and leaves no scratch file, so the working tree is as it was. The one file it writes is the JSON a `--json` path names, and only when that path is outside the repository.
+The skill reads; it changes no file in the repository, commits nothing and leaves no scratch file, so `git status` shows what it showed before. The one file it writes is the JSON a `--json` path names, and only when that path is outside the repository or ignored by it.
 
 The text after the command: $ARGUMENTS
 
@@ -17,11 +17,11 @@ Terms used below:
 
 - An **arm** is the plugin's `review-arm` agent, launched as `ponderly:review-arm`, one per lens. Its own definition holds its procedure and the shape of its arm block, so the launch carries only the review's inputs; it gathers the diff itself.
 - The **reviewer** is the plugin's `wave-reviewer` agent, launched as `ponderly:wave-reviewer`, once per review. Its own definition holds its procedure and the shape of its Findings.
-- A **lens** is one `##` section of `lenses.md`. The **shared standard** is the sentences of that file's opening paragraph from "Across every lens" to the paragraph's end.
+- A **lens** is one `##` section of `lenses.md`. The **shared standard** is the sentences of that file's opening paragraph from the sentence that begins "Across every lens, a finding worth reporting" to the paragraph's end.
 
 ## Working with the author
 
-- **Stops.** Only when something is wrong: a `base...head` side that names no commit, a range with only one of its first two words naming a commit, a `--json` without a path or with a path inside the repository, a `--duplicates` whose word is not `same-defect`, `keep` or `overlap`, a range with no diff, a missing `lenses.md`, and a missing `review-arm` agent. A missing `wave-reviewer` agent does not stop the review; step 5 says what follows.
+- **Stops.** Only when something is wrong: a `base...head` side that names no commit, a range with only one of its first two words naming a commit, a `--json` without a path or with a path inside the repository that git does not ignore, a `--duplicates` whose word is not `same-defect`, `keep` or `overlap`, a range with no diff, a missing `lenses.md`, and a missing `review-arm` agent. A missing `wave-reviewer` agent does not stop the review; step 5 says what follows.
 - **How it asks.** It does not ask; every input comes from the arguments and the repository.
 - **Hand-backs.** The report of step 7, or the stop that ends the run.
 - **Hand-offs.** None; the author decides what to do with the findings.
@@ -31,7 +31,7 @@ Terms used below:
 The arguments are on the first line of the text above; everything after that line is the pull request's title, its first non-empty line, and its body, the rest. When the first line holds neither a range nor `--json` nor `--duplicates`, there is no argument, and the whole text is the title and body.
 
 - **Range.** A word resolves when `git rev-parse --verify --quiet <word>^{commit}` succeeds. A word of the form `base...head` is the range, and both sides must resolve: when one does not, say which names no commit, and stop. Otherwise, when the first two words both resolve, they are the base and the head. When exactly one of the first two words resolves, say that a range needs a base and a head, or a `base...head`, and stop. When neither resolves, there is no range, and unless the first line holds `--json` or `--duplicates`, the whole text is the title and body.
-- **`--json <path>`.** The word after `--json` is the path. Missing: say that `--json` needs a path, and stop. Find the repository root with `git rev-parse --show-toplevel` and make the path absolute against the working directory. When it is the root or lies under it, say that the `--json` path must be outside the repository, naming both, and stop. When the path already exists, from an earlier review, read it with the Read tool before the first write, so the Write tool may overwrite it.
+- **`--json <path>`.** The word after `--json` is the path. Missing: say that `--json` needs a path, and stop. Find the repository root with `git rev-parse --show-toplevel` and make the path absolute against the working directory. When it is the root, or lies under it and `git check-ignore -q <path>` fails, say that the `--json` path must be outside the repository or ignored by it, naming both, and stop. When the path already exists, from an earlier review, read it with the Read tool before the first write, so the Write tool may overwrite it.
 - **`--duplicates <mode>`.** The word after `--duplicates` is the mode of step 4's duplicate collapse: `same-defect`, the default when the argument is absent, `keep` or `overlap`. Any other word, or none: say that `--duplicates` takes `same-defect`, `keep` or `overlap`, and stop.
 
 A title or body that is not given is passed on as "none given".
@@ -42,7 +42,7 @@ With a base and a head from the arguments, the base is `git merge-base <base> <h
 
 With no range, the head is the working tree and the base is the branch's merge base with the default branch: the default branch is `git rev-parse --abbrev-ref origin/HEAD` with the `origin/` prefix removed, or `main` when that command fails, as it does when `origin/HEAD` is unset, even though it still prints `origin/HEAD`; the base is `git merge-base origin/<default> HEAD`; when there is no `origin`, it is `git merge-base <default> HEAD` with the local default branch, if that branch exists and is not the current one; when neither exists, or the merge base cannot be found, the base is `HEAD`. The changed files are those `git diff --name-only <base>` lists, which compares the working tree with the base, with the new files `git ls-files --others --exclude-standard` lists.
 
-When the list of changed files is empty, say "no diff" with the base and head it was measured between, return no findings, and stop. With `--json`, write the findings object of step 4 with `pass` `"final"`, `verdict` `null`, `second_pass` `false`, every count 0, `departures_not_reported`, `folded` and `not_anchored` included, `failed_arms` and `relaunched` `[]`, `findings` `[]` and `not_reported` `[]` before stopping.
+When the list of changed files is empty, say "no diff" with the base and head it was measured between, return no findings, and stop. With `--json`, write the findings object of step 4 with `pass` `"final"`, `verdict` `null`, `second_pass` `false`, `counts` holding its eight entries, `candidates`, `removed_by_merge`, `removed_by_review`, `departures_not_reported`, `folded` and `not_anchored` 0 and `failed_arms` and `relaunched` `[]`, `findings` `[]` and `not_reported` `[]` before stopping.
 
 ## 3. Launch the arms
 
@@ -78,7 +78,7 @@ With `--json`, write the interim findings object to the path with the Write tool
   "pass": "first",
   "verdict": null,
   "second_pass": false,
-  "counts": {"candidates": 0, "removed_by_merge": 0, "removed_by_review": 0, "failed_arms": []},
+  "counts": {"candidates": 0, "removed_by_merge": 0, "removed_by_review": 0, "failed_arms": [], "departures_not_reported": 0, "folded": 0, "not_anchored": 0, "relaunched": []},
   "findings": [
     {"file": "path/at/head.py", "start_line": 1, "end_line": 1, "severity": "high", "category": "correctness", "message": "..."}
   ],
@@ -86,7 +86,7 @@ With `--json`, write the interim findings object to the path with the Write tool
 }
 ```
 
-`failed_arms` holds the lens name of each failed arm; `findings` holds the merged list, each entry with the six fields of its arm-block entry.
+`failed_arms` holds the lens name of each failed arm; `departures_not_reported`, `folded`, `not_anchored` and `relaunched` are the final pass's counts, kept at `0`, `0`, `0` and `[]` until step 7; `findings` holds the merged list, each entry with the six fields of its arm-block entry.
 
 ## 5. Wave review
 
@@ -157,15 +157,16 @@ This is the one second pass: no third launch of the arms and no second wave revi
 
 ## 7. Report
 
-Without `--json`, reply with the final list, high first, one finding per line as `<severity> <category> <file>:<start_line>-<end_line> <message>`, or "No findings." when the list is empty. After it, one count line: the candidates, as step 4 counts them or, after a wave review that returned findings, as step 6e does, the number the merge removed, the number removed by the review, the wave review's verdict (`holds`, `findings`, or that it did not return or did not run), and each failed arm by its lens and pass, or that none failed; then `folded <n>, not anchored <n>, relaunched <lens, ...>` or `relaunched none`, then, when the wave review returned Findings, whether they hold or have findings, `departures not reported <n>` with step 5's count, 0 when there are none; and `budget stopped the second pass` when step 6b says it did. When the wave review held, did not return or did not run, nothing is folded and nothing relaunched; when it did not return or did not run, the count line has no `departures not reported`.
+Without `--json`, reply with the final list, high first, one finding per line as `<severity> <category> <file>:<start_line>-<end_line> <message>`, or "No findings." when the list is empty. After it, one count line: the candidates, as step 4 counts them or, after a wave review that returned findings, as step 6e does, the number the merge removed, the number removed by the review, the wave review's verdict (`holds`, `findings`, or that it did not return or did not run), and each failed arm by its lens and pass, or that none failed; then `folded <n>, not anchored <n>, relaunched <lens, ...>` or `relaunched none`, then, when the wave review returned Findings, whether they hold or have findings, `departures not reported <n>` with step 5's count, 0 when there are none; and `budget stopped the second pass` when step 6b says it did. When the wave review held, did not return or did not run, nothing is folded and nothing relaunched; when it did not return or did not run, the count line has no `departures not reported`. After the count line, one line per `unsure` entry beginning `change remark:` in the arm blocks the merges took, once per arm, each line as `change remark: <its text after the prefix>`.
 
-With `--json`, write the final findings object to the path, in step 4's shape with `pass` `"final"`, `verdict` `"holds"`, `"findings"` or `null` when the wave review did not return or did not run, `second_pass` `true` when at least one arm was relaunched and `false` otherwise, and the final counts, `departures_not_reported` the count line's number, 0 when the wave review did not return or did not run; `folded` and `not_anchored` the count line's numbers and `relaunched` its lenses as a list, 0, 0 and `[]` when the wave review held, did not return or did not run, and `relaunched` `[]` when the count line says relaunched none; and the final list, folded findings included, with the six fields of an arm's entry. Beside `findings`, `not_reported` lists what the review left out, each entry with `file`, `quote`, `problem` and `reason`, and `null` for a file or quote the entry does not give:
+With `--json`, write the final findings object to the path, in step 4's shape with `pass` `"final"`, `verdict` `"holds"`, `"findings"` or `null` when the wave review did not return or did not run, `second_pass` `true` when at least one arm was relaunched and `false` otherwise, and the final counts, all eight entries of `counts` required whether the object is written afresh or the interim file is edited: `candidates`, `removed_by_merge`, `removed_by_review` and `failed_arms` as the count line gives them, the failed arms of both passes, `departures_not_reported` the count line's number, 0 when the wave review did not return or did not run; `folded` and `not_anchored` the count line's numbers and `relaunched` its lenses as a list, 0, 0 and `[]` when the wave review held, did not return or did not run, and `relaunched` `[]` when the count line says relaunched none; and the final list, folded findings included, with the six fields of an arm's entry. Beside `findings`, `not_reported` lists what the review left out, each entry with `file`, `quote`, `problem` and `reason`, and `null` for a file or quote the entry does not give:
 
 - each departure not reported, with the file, quote and problem its entry gives, and `reason` `team-rule departure without cost`;
 - each other `unsure` entry of the reviewer's Findings but `nothing`, with its file and quote when it names them, its text as the problem, and `reason` `unsettled lead`;
 - each reviewer finding step 6d counts as not anchored, with its file, quote and problem as the reviewer returned them, and `reason` `not anchored`;
-- each new reviewer finding step 6d gave to a relaunched arm that returned a second-pass list, when that list does not hold it at its file on lines that hold its quote, with its file, quote and problem as the reviewer returned them, and `reason` `dropped by relaunched arm`.
+- each new reviewer finding step 6d gave to a relaunched arm that returned a second-pass list, when that list does not hold it at its file on lines that hold its quote, with its file, quote and problem as the reviewer returned them, and `reason` `dropped by relaunched arm`;
+- each `unsure` entry beginning `change remark:` in the arm blocks the merges took, once per arm, with `file` and `quote` `null`, its text after the prefix as the problem, and `reason` `change remark`.
 
 To read a departure entry, take the text after `departure not reported: ` and split it at its first `: "` and its last `": `: the file is before the first, the quote between the two, and the problem after the last.
 
-`not_reported` is `[]` when the wave review did not return or did not run, and none of its entries is ever in `findings`. Then reply with the path and the count line alone.
+`not_reported` holds only the change remarks when the wave review did not return or did not run, and none of its entries is ever in `findings`. Then reply with the path, the count line and the change remark lines alone.
