@@ -123,7 +123,7 @@ When the budget allows and at least one finding of the merged list is contradict
 - the reviewer's Findings block, quoted whole, with the sentence, verbatim, "Leave alone every unsure entry of these Findings that begins `departure not reported:`; it is not a finding, so neither anchor it nor keep it.";
 - the whole merged list from step 4, quoted in the arm block's shape, from which the arm takes as its own the entries whose category its lens carries.
 
-Each relaunched arm returns the whole list for its lens, which replaces its first-pass list. Relaunch a failed arm once, as step 4 says; an arm that fails again keeps its first-pass list, and its lens is named as failed in this pass. When no finding is contradicted, or the budget stopped it, there is no second pass.
+Each relaunched arm returns the whole list for its lens, which replaces its first-pass list. Relaunch a failed arm once, as step 4 says; an arm that fails again keeps its first-pass list, and its lens is named as failed in this pass. Wait for every relaunched arm, and for every failed one relaunched again, to return or fail before step 6d: the first to return does not end the pass, and the reply of step 7 comes only after the last. When no finding is contradicted, or the budget stopped it, there is no second pass.
 
 ### 6d. Fold and settle
 
