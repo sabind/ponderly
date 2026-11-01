@@ -99,7 +99,12 @@ holds infrastructure code. `tighten-tests` runs the project's coverage tool, and
 copies a source file to a backup folder in the system's temporary directory
 while it breaks that file on purpose and restores it at once. When the project
 has no coverage tool and you choose to add one, it installs it as a development
-dependency with the project's own package manager.
+dependency with the project's own package manager. The skills that launch the
+`task-executor` agent (`start-task`, `implement-spec`, `readable-code` and
+`tighten-tests`) make a folder for each launch in the session's scratchpad with
+`mktemp -d`, and `readable-code` and `tighten-tests` also make one for their
+own records of the run, which they delete when the run ends. Nothing outside
+the session's scratchpad is created or deleted for this.
 
 The `strategy`, `hld` and `lld` skills and the `document-reviewer` agent run
 no `git` and no `gh`. They read the repository's `.ponderly/` folders,

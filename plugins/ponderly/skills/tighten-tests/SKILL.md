@@ -2,7 +2,7 @@
 name: tighten-tests
 description: Slim a branch's tests without losing a covered line or a proof a requirement needs. Use when asked to slim the tests, tighten, trim or prune them, audit the tests, or when a branch has too many tests. Readability of the source is readable-code's, not this skill's; it asks first whether readable-code has run on the final code and offers to run it. Audits every test the branch adds or changes with a keep, merge or drop verdict the author approves, applies the verdicts without changing a source file, proves the smaller suite no weaker by line coverage and mutation checks, has the changes reviewed and fixed, and hands back with the report skill, offering to file each gap it found as an issue. Commits nothing.
 argument-hint: "[paths]"
-allowed-tools: Bash(git status *) Bash(git branch *) Bash(git rev-parse *) Bash(git config --get *) Bash(git log *) Bash(git diff *) Bash(git merge-base *) Bash(git ls-files *) Bash(git show *) Bash(cp *) Bash(mkdir *) Bash(gh issue create *)
+allowed-tools: Bash(git status *) Bash(git branch *) Bash(git rev-parse *) Bash(git config --get *) Bash(git log *) Bash(git diff *) Bash(git merge-base *) Bash(git ls-files *) Bash(git show *) Bash(cp *) Bash(mkdir *) Bash(mktemp *) Bash(gh issue create *)
 ---
 
 # Tighten the tests
@@ -17,7 +17,8 @@ Terms used below:
 
 - **Scope** is the files the branch changes against its target branch, uncommitted and untracked work included, narrowed to the paths in the arguments when there are any.
 - The **Baseline** is what is recorded before any test changes: the full suite's result, the test counts, the covered lines per module and the source state.
-- The **source state** is `git status --porcelain` and `git diff HEAD`, each over every file of the repository that is not a test file, and the contents of the untracked source files, kept in the session's scratchpad.
+- The **source state** is `git status --porcelain` and `git diff HEAD`, each over every file of the repository that is not a test file, and the contents of the untracked source files, kept in the Run_Folder.
+- The **Run_Folder** is a new folder in the session's scratchpad, made with `mktemp -d "<scratchpad>/tighten-tests-run-XXXXXX"` at the start of step 2, one per run, so a folder an earlier run left is never reused and stays in place. It holds every record the run keeps: the source state and the covered lines each time they are taken, at the Baseline, at step 7's second coverage read, at step 8's record and at each source check, and the Audit's records.
 - The **source check** records the source state again and compares it with the Baseline's. If any part differs, stop and report the diff. No step of this skill changes a source file, so every step that ends with the source check stops on a difference. To see the old code, use the backup or the Baseline's source state; never run `git stash`, `git checkout` or `git reset`, which would touch the branch's uncommitted work and the stash every worktree shares.
 - The **Keep_List** is the tests kept whatever the Audit says: checks the author asked for, checks a requirement names, deployed end-to-end proofs, and seeded property tests a spec names.
 - The **Audit** is the read-only pass that names, for every test in Scope, the path or gotcha it proves and gives it a Verdict.
@@ -33,7 +34,7 @@ Terms used below:
 
 ## Working with the author
 
-- **Stops.** Every run: the readability question in step 1; the Keep_List question in step 3; the approval of the Audit in step 5, repeated until approved. Only when something is wrong: the stop in step 1 when Scope holds no test file; the question in step 2 when the suite fails at the Baseline, and the one when the project has no coverage tool; the stop in step 6 when an executor changed a file outside its File_Group; the source check's stop in steps 6, 8 and 9; the restore offer in step 9 when the review finds a requirement left with no proof; the stop when the `task-executor` agent, the `wave-reviewer` agent or the `report` skill is missing. At the end: the Gap offer in step 10, when there are Gaps.
+- **Stops.** Every run: the readability question in step 1; the Keep_List question in step 3; the approval of the Audit in step 5, repeated until approved. Only when something is wrong: the stop in step 1 when Scope holds no test file; the question in step 2 when the suite fails at the Baseline, and the one when the project has no coverage tool; the stop in step 6 when an executor changed a file outside its File_Group or deleted a path outside its own folder; the source check's stop in steps 6, 8 and 9; the restore offer in step 9 when the review finds a requirement left with no proof; the stop when the `task-executor` agent, the `wave-reviewer` agent or the `report` skill is missing. At the end: the Gap offer in step 10, when there are Gaps.
 - **How it asks.** With the AskUserQuestion tool, fixed options plus free text, at the readability question, the suite and coverage-tool questions, the approval, the restore offer and the Gap offer. The Keep_List question is prose, since the answer is the author's own words.
 - **Hand-backs.** The Audit, the File_Groups and the Shared_Decisions in step 5, as the approval question's text; the hand-back in step 10, written by the plugin's `report` skill.
 - **Hand-offs.** `readable-code` when the author chooses to run it first; `start-task` for each Gap, or the issue it is filed as; `pr` once the hand-back is accepted. This skill never commits, branches or pushes.
@@ -58,11 +59,11 @@ Then ask, header `Readability`, whether `readable-code` has run on the final cod
 
 ## 2. Take the Baseline
 
-Find how the project runs its tests and its coverage, from its configuration and scripts. Run the full suite once with coverage, and record:
+Make the Run_Folder first. Find how the project runs its tests and its coverage, from its configuration and scripts. Run the full suite once with coverage, and record:
 
 - the suite's result: passed, failed and skipped;
 - the number of tests in each test file in Scope, and in total;
-- for each module, the set of covered lines, read from the coverage tool's machine-readable report and kept in a file in the session's scratchpad;
+- for each module, the set of covered lines, read from the coverage tool's machine-readable report and kept in a file in the Run_Folder;
 - the source state.
 
 If the suite fails, report the failing tests verbatim and ask, header `Baseline`, whether to go on (`Go on`, `Stop`). On `Go on`, record each failing test in Scope that fails because the source is wrong, with its failure output quoted; step 6 marks it an Expected_Failure.
@@ -110,13 +111,15 @@ Ask, header `Approve`, options `Approved` and `Changes needed`, whether to apply
 
 ## 6. Apply the Verdicts
 
-Launch one executor per approved File_Group, with `subagent_type: ponderly:task-executor`, all in one message so they run concurrently. Never say to an executor, in any words, that its task comes from a spec. Each prompt holds:
+Launch one executor per approved File_Group, with `subagent_type: ponderly:task-executor`, all in one message so they run concurrently. Before launching, make each executor its own folder with `mktemp -d "<scratchpad>/tighten-tests-executor-XXXXXX"`, one per launch. Never say to an executor, in any words, that its task comes from a spec. Each prompt holds:
 
 - the group's file paths, and that they are the only files to change;
 - each file's approved Verdicts, each test quoted with its Verdict and the test it merges into or why it goes;
 - the Shared_Decisions, verbatim, and that issues its files share are handled the same way in each;
 - each test of the group that failed at the Baseline because the source is wrong, named, with its Baseline failure quoted, to be marked an Expected_Failure;
-- the sentence, verbatim, "Change no source file.";
+- the sentence, verbatim, "Change no source file.", and that it backs up, breaks and restores no source file either, not even to check a test;
+- the sentence, verbatim, "Your own folder is `<own>`: keep every scratch file in it, delete it when you finish, and delete nothing else in the scratchpad.", with `<own>` replaced by the folder made for this launch;
+- the sentence, verbatim, "`<path>` is the launcher's: read it, but never change or delete it.", with `<path>` replaced by the Run_Folder;
 - the sentence, verbatim, "Never run `git stash`, `git checkout` or `git reset`.";
 - the sentence "To see a file as it was before the branch changed it, use `git show <base>:<path>`, which is read-only.", with `<base>` replaced by the base found in step 1;
 - that a test which fails because the source is wrong is marked an Expected_Failure in the project's test framework and the defect is reported under `unsure`, not fixed;
@@ -125,12 +128,13 @@ Launch one executor per approved File_Group, with `subagent_type: ponderly:task-
 
 When every executor has returned:
 
+- For every Summary, `done` or `stopped`, check `deleted:` first. Each entry must be the own folder made for that launch, a path inside it, or a file under its `files changed`. An entry outside both, or a Summary with no `deleted:` field, stops the run: report it to the author as a problem, the entry quoted, before any record in the Run_Folder is used, and leave the Run_Folder in place, naming its full path in the stop so the author can inspect what is left.
 - A `stopped` Summary is shown to the author as it is. That group's files are left as they are and carried to the hand-back.
 - For a `done` Summary, check that its `files changed` lists only its own group's test files. Any other file is treated as a changed source file: stop and report it. Then run the commands under its `checks run` yourself.
 - Each Expected_Failure an executor marked, and each defect it reported, goes to the hand-back's problems, with the test and the defect.
 - Run the source check.
 
-Later steps relaunch a file's executor "as in step 6": a new executor for the File_Group that owns the file, with the same prompt, its job replaced by the one that step gives.
+Later steps relaunch a file's executor "as in step 6": a new executor for the File_Group that owns the file, with a new own folder made as above and the same prompt, its own sentences included, its job replaced by the one that step gives; its Summary is checked as above.
 
 ## 7. Compare coverage
 
@@ -172,12 +176,14 @@ Wait for its Findings. Then:
 
 - For each requirement the Findings name as left with no proof, report it and ask, header `Restore`, options `Restore it` and `Leave it`, whether to restore the test that proved it. On `Restore it`, relaunch that file's executor, as in step 6, and run its tests.
 - A `blocker` or `should-fix` that needs a source change is not fixed; it goes to the hand-back's problems, quoted.
-- Every other `blocker` or `should-fix` is fixed, for up to two fix attempts. One in a test file this run changed goes to the executor of the File_Group that owns the file, relaunched as in step 6. One in a file the slimming made wrong without changing it, such as a shared fake that only dropped tests used and that is now dead, or a document that counts the tests, goes to a new executor, launched as in step 6 with that file as a group of one and the finding as its whole task; never a source file. After each attempt, run that file's tests, run the Mutation_Check of step 8 for every test the fix changed, handling a Vacuous_Test as step 8 does, and run the source check. A finding still open after the two attempts goes to the hand-back's problems, quoted.
+- Every other `blocker` or `should-fix` is fixed, for up to two fix attempts. One in a test file this run changed goes to the executor of the File_Group that owns the file, relaunched as in step 6. One in a file the slimming made wrong without changing it, such as a shared fake that only dropped tests used and that is now dead, or a document that counts the tests, goes to a new executor, launched as in step 6 with that file as a group of one and the finding as its whole task; never a source file. After each attempt, run that file's tests. Then, once the executor has returned, run the Mutation_Check of step 8 yourself, in this session, for every test the fix changed, one at a time and with the backup folder, as step 8 does, handling a Vacuous_Test as step 8 does; never ask an executor to run one. Then run the source check. A finding still open after the two attempts goes to the hand-back's problems, quoted.
 - Every `nit`, and every finding in a file the slimming neither changed nor made wrong, goes to the hand-back's problems, quoted.
 
 There is no second review after the fixes.
 
 ## 10. Hand back
+
+First read every record the Message needs from the Run_Folder, then delete the Run_Folder before invoking `report`, so no tool call follows the Message; nothing after this reads it.
 
 Invoke the Skill tool with `skill: ponderly:report` and `args: handback`, inline, to write the hand-back Message. It carries:
 

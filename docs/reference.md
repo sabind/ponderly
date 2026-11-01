@@ -466,7 +466,7 @@ a skill or session launch it with the Agent tool as
 ### task-executor
 
 Builds one well-specified change as the smallest change in the project's
-style, proves it, and deletes its scratch work.
+style, proves it, and deletes only its own scratch folder.
 
 - **Launched by:** `start-task` for one contained change;
   `implement-spec` for every leaf task; `readable-code` for each group of
@@ -479,8 +479,8 @@ style, proves it, and deletes its scratch work.
   - **Spec mode**, when the prompt says the task comes from a spec, in any
     words. `implement-spec` says "This task is a leaf task from a spec; tests
     are tasks of their own." There it writes a test only when the task asks
-    for one. It proves a code task with an ephemeral check, deletes it, and
-    reports it in its Summary.
+    for one. It proves a code task with an ephemeral check, kept in its
+    scratch folder and deleted with it, and reports it in its Summary.
   - **Standalone mode**, otherwise. The change comes with its test, written
     the way the project writes tests.
 - **When it stops:** it stops and asks instead of guessing when the task is
@@ -488,8 +488,14 @@ style, proves it, and deletes its scratch work.
   dependency, framework or tool.
 - **What it returns:** a Summary: `status` (`done` or `stopped`), `files
   changed`, `checks run` with their results, the ephemeral check it ran or
-  why none applied, what it is `unsure` of, and, when stopped, the question
-  or evidence under `stopped because`.
+  why none applied, `deleted` with the full path of every file and folder it
+  deleted or `nothing`, what it is `unsure` of, and, when stopped, the
+  question or evidence under `stopped because`.
+- **Cleanup:** it keeps all scratch work in its own folder, the one the
+  launch prompt names or one it makes under the session's scratchpad, and
+  deletes that folder when it finishes, done or stopped. Outside it, it
+  deletes only a repository file it created or one the change removes; a
+  request to delete anything else is not obeyed and goes under `unsure`.
 
 ### wave-reviewer
 
@@ -809,7 +815,12 @@ holds infrastructure code. `tighten-tests` runs the project's coverage tool, and
 copies a source file to a backup folder in the system's temporary directory
 while it breaks that file on purpose and restores it at once. When the project
 has no coverage tool and you choose to add one, it installs it as a development
-dependency with the project's own package manager.
+dependency with the project's own package manager. The skills that launch the
+`task-executor` agent (`start-task`, `implement-spec`, `readable-code` and
+`tighten-tests`) make a folder for each launch in the session's scratchpad with
+`mktemp -d`, and `readable-code` and `tighten-tests` also make one for their
+own records of the run, which they delete when the run ends. Nothing outside
+the session's scratchpad is created or deleted for this.
 
 The `strategy`, `hld` and `lld` skills and the `document-reviewer` agent run
 no `git` and no `gh`. They read the repository's `.ponderly/` folders,

@@ -20,7 +20,7 @@ ponderly is a Claude Code plugin of skills, agents and team rules. Install it wi
 
 ## Agents
 
-- [task-executor](https://github.com/sabind/ponderly/blob/main/plugins/ponderly/agents/task-executor.md): when you have one well-specified change to build as the smallest change in the project's style, proved and with its scratch work deleted
+- [task-executor](https://github.com/sabind/ponderly/blob/main/plugins/ponderly/agents/task-executor.md): when you have one well-specified change to build as the smallest change in the project's style, proved and with only its own scratch folder deleted
 - [wave-reviewer](https://github.com/sabind/ponderly/blob/main/plugins/ponderly/agents/wave-reviewer.md): when you want a set of changes reviewed against the requirements and design they implement, changing nothing
 - [document-reviewer](https://github.com/sabind/ponderly/blob/main/plugins/ponderly/agents/document-reviewer.md): when you want a strategy, high level design or low level design reviewed against its template and its parent, changing nothing
 - [review-arm](https://github.com/sabind/ponderly/blob/main/plugins/ponderly/agents/review-arm.md): when you want one pull request read through one lens, such as correctness or security, returning only the problems it verified at the head, each anchored to its lines, changing nothing

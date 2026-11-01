@@ -2,7 +2,7 @@
 name: readable-code
 description: Make the source a branch changes read plainly, and prove its behaviour unchanged. Use when asked to make this branch readable, for a readability pass, or to simplify or untangle the code a branch changes. Works on the files the branch changes against its target branch, narrowed to the paths passed. Takes a baseline of the full suite, and of the synthesized output where the branch holds infrastructure code, then has the author approve groups of like files and the decisions they share, and launches one task-executor agent per group to apply the team's readability and comment rules with no behaviour change and no rename for taste. Runs both again, asks whether to revert or keep any file whose change made a difference, has the wave-reviewer agent read the pass, sends its blocker and should-fix findings back to the executors to fix, and hands back with the report skill. Not for a test cleanup, which is tighten-tests's; not for a bug, which is bugfix's; not for a new change, which is start-task's. Commits nothing.
 argument-hint: "[paths]"
-allowed-tools: Bash(git status *) Bash(git branch *) Bash(git rev-parse *) Bash(git config --get *) Bash(git log *) Bash(git merge-base *) Bash(git diff *) Bash(git ls-files *) Bash(cp *)
+allowed-tools: Bash(git status *) Bash(git branch *) Bash(git rev-parse *) Bash(git config --get *) Bash(git log *) Bash(git merge-base *) Bash(git diff *) Bash(git ls-files *) Bash(cp *) Bash(mktemp *)
 ---
 
 # Make a branch readable
@@ -18,6 +18,7 @@ Terms used below:
 - The **Scope** is the files the branch changes against its target branch, uncommitted and untracked work included, narrowed to the paths passed when there are any.
 - A **source file** is a file in Scope that holds code the project runs or deploys. Tests, documentation, configuration, lock files and generated files are not source files; a test cleanup is `tighten-tests`'s.
 - **Infrastructure code** is infrastructure-as-code that generates deployment templates. Its **synthesized output** is the templates the project's command that generates them produces.
+- The **Run_Folder** is the folder step 2 makes in the session's scratchpad for this run's own records: the Baseline copies and the synthesized outputs. Each run makes a new one and leaves any earlier run's in place.
 - The **Baseline** is what step 2 records before anything changes: the full suite's result, the synthesized output where Scope holds infrastructure code, and a copy of each source file in Scope.
 - A **File_Group** is the source files in Scope that share a template, role or pattern, such as several pages of one kind, worked by one executor so the issues they share are fixed the same way. A file with no peers is a group of one, and no file is in two groups.
 - The **Shared_Decisions** are a short list, written before any executor starts, of how each issue that recurs across Scope is to be handled, one line each, given to every executor so their choices agree.
@@ -27,7 +28,7 @@ Terms used below:
 ## Working with the author
 
 - **Stops.** Most runs stop at two points: the approval of the File_Groups and Shared_Decisions in step 3, and the hand-back of step 7.
-  - Only when something is wrong: the stop in step 1 when Scope holds no source file; the question in step 2 when the project has no test suite or the suite fails at the Baseline; the revert-or-keep question in step 5 for each file whose change made a difference, and in step 6 for each file a fix left differing; the stop when the `task-executor` agent, the `wave-reviewer` agent or the `report` skill is missing.
+  - Only when something is wrong: the stop in step 1 when Scope holds no source file; the question in step 2 when the project has no test suite or the suite fails at the Baseline; the revert-or-keep question in step 5 for each file whose change made a difference, and in step 6 for each file a fix left differing; the stop in step 4 or 6 when an executor's `deleted:` names a path that was not its own, or its Summary has no `deleted:` field; the stop when the `task-executor` agent, the `wave-reviewer` agent or the `report` skill is missing.
 - **How it asks.** With the AskUserQuestion tool, fixed options plus free text: whether the File_Groups and Shared_Decisions are approved (header `Groups`: approved, changes needed, with the changes as free text), whether to go on after a failing Baseline (go on, stop), whether to go on without a test suite (go on with a manual check the author names, stop), and for each differing file whether to revert or keep its change, all such files in one call.
 - **Hand-backs.** The Scope line of step 1; the hand-back of step 7, written by the `report` skill, with every stopped executor, every difference kept, every finding still open after two fix attempts and every `nit` under its problems.
 - **Hand-offs.** `tighten-tests` to clean up the branch's tests now that the code reads plainly; `pr` to open the pull request.
@@ -46,13 +47,13 @@ Say the Scope in one line before changing anything, naming the target branch and
 
 Before any file changes:
 
-1. Copy each source file in Scope to the session's scratchpad, keeping its path, so that a file's change can later be reverted without touching what the branch already holds uncommitted.
+1. Make the Run_Folder with `mktemp -d "<scratchpad>/readable-code-run-XXXXXX"`, where `<scratchpad>` is this session's scratchpad directory, and use the path it prints. Copy each source file in Scope into the Run_Folder, keeping its path, so that a file's change can later be reverted without touching what the branch already holds uncommitted.
 2. Run the project's full test suite, the way the project runs it, and record the result: which tests pass, which fail, and the counts.
-3. Where Scope holds infrastructure code, run the project's command that generates its deployment templates, with its output directed into the scratchpad, and keep that output.
+3. Where Scope holds infrastructure code, run the project's command that generates its deployment templates, with its output directed into the Run_Folder, and keep that output.
 
 If the project has no test suite, say so, and ask whether to go on with a manual check the author names, run at the Baseline and again in step 5 in place of the suite, or to stop. Do not add a test framework.
 
-If the suite fails at the Baseline, report the failing tests with their output verbatim, and ask whether to go on, with the failing tests as the known failures the later comparison allows, or to stop. Change nothing until the author answers. On stop, delete the scratchpad copies and end there.
+If the suite fails at the Baseline, report the failing tests with their output verbatim, and ask whether to go on, with the failing tests as the known failures the later comparison allows, or to stop. Change nothing until the author answers. On stop, delete the Run_Folder and end there.
 
 ## 3. Group the files and agree the decisions
 
@@ -62,12 +63,12 @@ Show the File_Groups, each with its files and, in a line, why they belong togeth
 
 ## 4. Launch the executors
 
-Launch one executor per File_Group, all in one message so they run concurrently, each with the Agent tool as `subagent_type: ponderly:task-executor` and a prompt that holds:
+For each File_Group, create its executor's own folder with `mktemp -d "<scratchpad>/readable-code-executor-XXXXXX"`: one per launch, outside the Run_Folder, so no two executors share one. Then launch one executor per File_Group, all in one message so they run concurrently, each with the Agent tool as `subagent_type: ponderly:task-executor` and a prompt that holds:
 
 - **Request**: "Make `<paths>` read plainly: apply the "Write for the reader." bullet of the `code-changes` rule and the `comments` rule to the code the branch added or changed in them, fix the issues they share the same way in each, and leave untouched code elsewhere in the files as it is.", with `<paths>` the group's files.
 - **Lines in scope**: for each of the group's files, the lines the branch added or changed in it, from `git diff <base> -- <path>`, or the whole file when it is untracked.
 - **Shared decisions**: the approved Shared_Decisions, verbatim, with the sentence, verbatim, "Follow these decisions wherever the issue they name appears in your files."
-- **Constraints**: the sentence, verbatim, "No behaviour change, no rename for taste, prove it with the existing tests.", followed by the sentence, verbatim, "Renaming a one-letter, misleading or terse name to a descriptive one is what "Write for the reader." asks for; a rename for taste swaps one clear name for another clear name.", followed by the sentence, verbatim, "To see the old code, read its Baseline copy at `<copy>`; never run `git stash`, `git checkout` or `git reset`.", given once for each of the group's files, with `<copy>` the scratchpad path of that file's Baseline copy
+- **Constraints**: the sentence, verbatim, "No behaviour change, no rename for taste, prove it with the existing tests.", followed by the sentence, verbatim, "Renaming a one-letter, misleading or terse name to a descriptive one is what "Write for the reader." asks for; a rename for taste swaps one clear name for another clear name.", followed by the sentence, verbatim, "To see the old code, read its Baseline copy at `<copy>`; never run `git stash`, `git checkout` or `git reset`.", given once for each of the group's files, with `<copy>` the path of that file's Baseline copy in the Run_Folder, each followed by the sentence, verbatim with the same `<copy>`, "`<copy>` is the launcher's: read it, but never change or delete it.", then the sentence, verbatim with the group's own folder in place of `<own>`, "Your own folder is `<own>`: keep every scratch file in it, delete it when you finish, and delete nothing else in the scratchpad."
 - **In flight**: the source files of the other File_Groups being made readable in this run, with the instruction to touch only the group's own files.
 - **Boundaries**: the sentence, verbatim, "Make only this change. Commit nothing. Return the Summary."
 
@@ -75,14 +76,16 @@ Nothing more. Never say, in any words, that the task comes from a spec: a readab
 
 If the Agent tool cannot find `ponderly:task-executor`, say that the plugin's `task-executor` agent is missing and stop. Do not make the readability changes yourself.
 
-Wait until every executor has returned. Then, for each Summary:
+Wait until every executor has returned. Then check each Summary's `deleted:` field before its `status`: every entry must be the own folder that launch named, a path inside it, or a file listed under its `files changed`. Show each entry outside those to the author, quoted, as a problem: the executor deleted something that was not its own. A Summary with no `deleted:` field is a problem too, shown the same way, since what it deleted cannot be checked. On either, stop there, before step 5 compares against a Baseline copy that may be gone, leaving the Run_Folder in place and naming its full path in the stop, so the author can inspect it or restore a file from its Baseline copy.
+
+Then, for each Summary:
 
 - **`stopped`**: show the Summary verbatim. Do not relaunch it or work around it. Leave the group's files as the executor left them, name any partial edits it lists under `files changed`, and carry the group's files and its `stopped because` to the hand-back's problems. Its partial edits stay in the comparison of step 5.
 - **`done`**: a Summary whose `files changed` names a file outside its group goes under the hand-back's problems with that file named. Collect its `unsure` items for the hand-back.
 
 ## 5. Prove no behaviour changed
 
-Run the full suite again, the same way, and compare it with the Baseline: the same tests pass and the same tests fail. To see how the old code behaved, run it from its Baseline copy; never run `git stash`, `git checkout` or `git reset`, which would touch the branch's uncommitted work and the stash every worktree shares. Where Scope holds infrastructure code, run the synthesis again into the scratchpad and diff its output against the Baseline's.
+Run the full suite again, the same way, and compare it with the Baseline: the same tests pass and the same tests fail. To see how the old code behaved, run it from its Baseline copy in the Run_Folder; never run `git stash`, `git checkout` or `git reset`, which would touch the branch's uncommitted work and the stash every worktree shares. Where Scope holds infrastructure code, run the synthesis again into the Run_Folder and diff its output against the Baseline's.
 
 If both match, say so in one line and go on to step 6.
 
@@ -93,7 +96,7 @@ If either differs, name the file that caused each difference: the source file th
 Launch the reviewer once, with the Agent tool as `subagent_type: ponderly:wave-reviewer` and a prompt that holds:
 
 - the files the pass changed, from the Summaries' `files changed`, less any reverted in step 5;
-- for each, the scratchpad path of its Baseline copy, with the instruction that the pass's own changes are `git diff --no-index <copy> <path>`, whose exit status 1 means the files differ and is expected, and that the branch's earlier changes are not under review;
+- for each, the path of its Baseline copy in the Run_Folder, with the instruction that the pass's own changes are `git diff --no-index <copy> <path>`, whose exit status 1 means the files differ and is expected, and that the branch's earlier changes are not under review;
 - what the changes must satisfy: the "Write for the reader." bullet of the `code-changes` rule and the `comments` rule, which the hook puts in its context, and the constraints sentence the executors were given, quoted;
 - the files that cite the changed ones: search the repository for each changed file's path and name.
 
@@ -101,7 +104,7 @@ Nothing more, and never the diff. If the Agent tool cannot find `ponderly:wave-r
 
 Wait for its Findings, and collect the reviewer's `unsure` items beside them. Then:
 
-- A `blocker` or `should-fix`, and any reviewer `unsure` item that is a defect in a file the pass changed, is fixed: send it, quoted, to the executor of the group that holds the file, or to a new one launched as in step 4 for that group and given the finding, with the same Shared_Decisions and constraints sentences. A fix is still bound by them: no behaviour change, no rename for taste. Up to two attempts per finding.
+- A `blocker` or `should-fix`, and any reviewer `unsure` item that is a defect in a file the pass changed, is fixed: send it, quoted, to the executor of the group that holds the file, with the sentence, verbatim with that executor's original own folder in place of `<own>`, "Your own folder is `<own>`: keep every scratch file in it, delete it when you finish, and delete nothing else in the scratchpad.", or to a new one launched as in step 4 for that group and given the finding, with a new own folder and the same Shared_Decisions and constraints sentences. A fix is still bound by them: no behaviour change, no rename for taste. Check each fix attempt's `deleted:` as in step 4, and stop on a problem there as step 4 does, Run_Folder left in place and named, before re-running any check against the Baseline. Up to two attempts per finding.
 - After each attempt, re-run that file's checks yourself: the full suite, compared with the Baseline as in step 5, and, where Scope holds infrastructure code, the synthesis diffed against the Baseline's output. A difference means the attempt failed. If a difference remains after the second attempt, name the file, report the difference verbatim and ask whether to revert or keep, as in step 5.
 - A finding still open after two attempts, every `nit`, and every reviewer `unsure` item that is not a defect in the pass's changes go to the hand-back's problems, quoted, with the reason each was not fixed.
 
@@ -109,7 +112,7 @@ No second review after the fixes.
 
 ## 7. Hand back
 
-Delete the scratchpad copies and the synthesized outputs. Then invoke the Skill tool with `skill: ponderly:report` and `args: handback`, once; its Message is the hand-back, with nothing written after it. Its problems hold every stopped executor, every difference kept, every finding still open after two fix attempts, every `nit`, every `unsure` item carried from the executors and the reviewer, and any Baseline failure the author chose to go on past. Its Next says the changes sit uncommitted on the current branch, and recommends `/ponderly:tighten-tests` to clean up the branch's tests now that the code reads plainly, or `/ponderly:pr` to open the pull request.
+Delete the Run_Folder. Then invoke the Skill tool with `skill: ponderly:report` and `args: handback`, once; its Message is the hand-back, with nothing written after it. Its problems hold every stopped executor, every difference kept, every finding still open after two fix attempts, every `nit`, every `unsure` item carried from the executors and the reviewer, and any Baseline failure the author chose to go on past. Its Next says the changes sit uncommitted on the current branch, and recommends `/ponderly:tighten-tests` to clean up the branch's tests now that the code reads plainly, or `/ponderly:pr` to open the pull request.
 
 If the Skill tool cannot find `ponderly:report`, say that the plugin's `report` skill is missing and stop. Do not write the hand-back yourself.
 

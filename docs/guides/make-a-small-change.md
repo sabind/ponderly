@@ -101,10 +101,14 @@ The author picked `Executor_Route (Recommended)`.
 
 ## 4. Let the executor make the change
 
-The skill launches the `task-executor` agent once. Its prompt holds your
-request word for word, the files the skill read that the change touches, your
-free-text answer if you gave one, and one boundary: "Make only this change.
-Commit nothing. Return the Summary."
+Before the launch, the skill creates a new, empty folder in its scratchpad
+for the executor. Then it launches the `task-executor` agent once. Its prompt
+holds your request word for word, the files the skill read that the change
+touches, your free-text answer if you gave one, and two boundaries: "Make
+only this change. Commit nothing. Return the Summary." and "Your own folder
+is `<own>`: keep every scratch file in it, delete it when you finish, and
+delete nothing else in the scratchpad.", with `<own>` replaced by the
+folder's path.
 
 ```mermaid
 sequenceDiagram
@@ -118,7 +122,7 @@ sequenceDiagram
     A->>S: Executor_Route (Recommended)
     S->>E: request, context found, your additions, boundaries
     E->>E: make the change with its test, run the checks
-    E-->>S: Summary: status, files changed, checks run, unsure
+    E-->>S: Summary: status, files changed, checks run, ephemeral check, deleted, unsure, stopped because
     S-->>A: the Summary verbatim, then git status and the diff
     S->>R: handback
     R-->>A: hand-back: Problems, Done, Checks, Files, Next
@@ -127,24 +131,31 @@ sequenceDiagram
 The executor reads the code around the change, makes the smallest change
 that does the job in the project's style, and adds a test the way the
 project writes tests. If the project has no test framework, it says so and
-records a manual check instead. It runs the tests for what it touched, and
-deletes any scratch script it used.
+records a manual check instead. It runs the tests for what it touched. It
+keeps every scratch script in a folder of its own, deletes that folder when
+it finishes, and deletes nothing else outside the change.
 
 The executor writes the change into your working tree. Nobody commits it:
 not the executor, not the skill.
 
 ## 5. Read the Summary and the change
 
-When the executor finishes, the skill shows its Summary word for word. If
-any check failed, the skill says so first. The Summary has these fields:
+When the executor finishes, the skill first checks what it deleted. If the
+`deleted` field names anything other than the executor's own folder, a path
+inside it or one of its changed files, or the field is missing, the skill
+says so before anything else. Next, if any check failed, the skill says so.
+Then it shows the Summary word for word. The Summary has these fields:
 
 - `status`: `done` or `stopped`.
 - `files changed`: every file it created or edited.
 - `checks run`: each command it ran, with the result it saw.
 - `ephemeral check`: the scratch check it ran and deleted, or why none
   applied.
+- `deleted`: the full path of every file and folder it deleted, or
+  `nothing`.
 - `unsure`: anything it inferred rather than saw, and anything it noticed
   outside the change.
+- `stopped because`: when it stopped, the question or the evidence.
 
 ![The task-executor's Summary returns with status: done. It lists the five new files of the reads-back-without-ticket eval case, explains the prompt and its four regex graders, reports make validate passing and a scratch Node check of the patterns, gives the command to run the case, and lists what it is unsure of, including that the skill's own text in the run record could make the graders pass.](../images/small-change-summary.svg)
 
