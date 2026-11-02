@@ -95,12 +95,15 @@ These three reach the image and are recorded in `run.json`:
 - `RB_CONFIG_BUDGET_USD`: the cost cap of one pull request's session in
   dollars, `15` by default.
 
-These two reach the image but are not recorded in `run.json`:
+These three reach the image but are not recorded in `run.json`:
 
 - `RB_KEEP_TRANSCRIPTS`: `1` by default; `0` runs Claude Code without session
   persistence, so the evidence holds no transcripts.
 - `RB_FINAL_GRACE_SECONDS`: the seconds after the review file turns final
   before Claude Code is ended, `60` by default.
+- `RB_INTERRUPT_WAIT_SECONDS`: the seconds the adapter waits after
+  interrupting a session that outlived the grace before killing it, `20` by
+  default.
 
 ## The judge endpoint
 

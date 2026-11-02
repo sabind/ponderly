@@ -68,7 +68,7 @@ try_agent() {
     TRY_AGENT_WORK="$try_agent_work" \
       "$clone/scripts/try-agent.sh" "$IMAGE" "$@" \
       -e ANTHROPIC_API_KEY -e CLAUDE_CODE_OAUTH_TOKEN -e RB_CONFIG_MODEL -e RB_CONFIG_EFFORT -e RB_CONFIG_BUDGET_USD \
-      -e RB_KEEP_TRANSCRIPTS -e RB_FINAL_GRACE_SECONDS
+      -e RB_KEEP_TRANSCRIPTS -e RB_FINAL_GRACE_SECONDS -e RB_INTERRUPT_WAIT_SECONDS
   ) 2>&1 | tee -a "$run_dir/logs/try-agent.log"
 }
 

@@ -275,13 +275,16 @@ def claude_account(env, evidence):
 
 
 def run_claude(arguments, prompt, cwd, env, timeout_seconds, grace_seconds=None, review_path=None,
-               stderr=None, account=None):
+               stderr=None, account=None, interrupt_wait_seconds=None):
     """Run Claude Code with the prompt on stdin, as account when given; return (exit code, stdout, ended).
 
     ended is None when Claude Code exited on its own, "timeout" when it was killed at
-    timeout_seconds, and "final" when it was killed after the review file at review_path had
-    been final for grace_seconds. A grace_seconds of None never ends it early. stderr is where
-    Claude Code's standard error goes; None leaves it on the adapter's.
+    timeout_seconds, "interrupted" when it exited on SIGINT within interrupt_wait_seconds after
+    the review file at review_path had been final for grace_seconds, and "final" when it was
+    killed after that grace, the interrupt ignored or not sent. A grace_seconds of None never
+    ends it early; an interrupt_wait_seconds of None or 0 kills at once after the grace, and the
+    wait never runs past timeout_seconds. stderr is where Claude Code's standard error goes;
+    None leaves it on the adapter's.
     """
     account_arguments = {}
     if account is not None:
@@ -327,14 +330,21 @@ def run_claude(arguments, prompt, cwd, env, timeout_seconds, grace_seconds=None,
     if ended is None:
         process.stdout.close()
         return process.returncode, b"".join(chunks), None
-    # Claude Code spawns sub-agents and tools; killing only the child would leave them running.
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
-    except PermissionError:
-        # macOS refuses to signal a group whose only members are unreaped zombies.
-        pass
+    # NaN and negative waits fail this comparison, so they kill at once like None and 0.
+    wants_interrupt = interrupt_wait_seconds is not None and interrupt_wait_seconds > 0
+    if ended == "final" and wants_interrupt and process.poll() is None:
+        wait_seconds = max(0, min(interrupt_wait_seconds, deadline - time.monotonic()))
+        exited_on_interrupt = interrupted_within(process, wait_seconds)
+    else:
+        exited_on_interrupt = False
+    if exited_on_interrupt:
+        # Sub-agents and tools that ignored the interrupt would outlive Claude Code and hold stdout open.
+        signal_group(process, signal.SIGKILL)
+        reader.join(KILLED_OUTPUT_WAIT_SECONDS)
+        if not reader.is_alive():
+            process.stdout.close()
+        return process.returncode, b"".join(chunks), "interrupted"
+    signal_group(process, signal.SIGKILL)
     # A tool that left the process group can hold stdout open long after the kill.
     reader.join(KILLED_OUTPUT_WAIT_SECONDS)
     # A reader still blocked on the pipe holds its buffer lock, so closing it here would wait for that reader.
@@ -346,6 +356,29 @@ def run_claude(arguments, prompt, cwd, env, timeout_seconds, grace_seconds=None,
     if ended == "final" and exited_before_kill:
         ended = None
     return exit_code, b"".join(chunks), ended
+
+
+def interrupted_within(process, wait_seconds):
+    """Send SIGINT to the process's group; return whether the process exited within wait_seconds."""
+    signal_group(process, signal.SIGINT)
+    deadline = time.monotonic() + wait_seconds
+    while process.poll() is None:
+        now = time.monotonic()
+        if now >= deadline:
+            return False
+        time.sleep(min(POLL_SECONDS, deadline - now))
+    return True
+
+
+def signal_group(process, signal_number):
+    # Claude Code spawns sub-agents and tools; signalling only the child would leave them running.
+    try:
+        os.killpg(process.pid, signal_number)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        # macOS refuses to signal a group whose only members are unreaped zombies.
+        pass
 
 
 def write_and_close(stream, data):
@@ -398,6 +431,77 @@ def usage_of(stdout):
     return usage
 
 
+def grace_end_clause(ended, interrupt_wait_seconds):
+    if not interrupt_wait_seconds > 0:
+        return "; it was killed without an interrupt"
+    if ended == "interrupted":
+        return "; it exited on the interrupt"
+    return "; it ignored the interrupt and was killed"
+
+
+def transcript_cost(home):
+    """Return the used dollars of the last budget row in the newest session transcript under home, or None."""
+    if home is None:
+        return None
+    projects = os.path.join(home, ".claude", "projects")
+    if not os.path.isdir(projects):
+        return None
+    # An unreadable folder or a file gone between the listing and the read costs only the cost, not the review.
+    try:
+        newest = newest_transcript(projects)
+        if newest is None:
+            return None
+        last_budget_row = last_budget_row_of(newest)
+    except OSError:
+        return None
+    if last_budget_row is None:
+        return None
+    used = last_budget_row["attachment"].get("used")
+    if isinstance(used, bool) or not isinstance(used, (int, float)):
+        return None
+    return float(used)
+
+
+def newest_transcript(projects):
+    # Sub-agent transcripts sit in a sub-directory of the project directory, so the newest file
+    # directly under a project directory is the main session's.
+    newest = None
+    newest_mtime = None
+    for project in os.listdir(projects):
+        project_dir = os.path.join(projects, project)
+        if not os.path.isdir(project_dir):
+            continue
+        for name in os.listdir(project_dir):
+            path = os.path.join(project_dir, name)
+            if not name.endswith(".jsonl") or not os.path.isfile(path):
+                continue
+            mtime = os.path.getmtime(path)
+            if newest_mtime is None or mtime > newest_mtime:
+                newest = path
+                newest_mtime = mtime
+    return newest
+
+
+def last_budget_row_of(path):
+    last_budget_row = None
+    with open(path, encoding="utf-8", errors="replace") as transcript:
+        for line in transcript:
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if is_budget_row(row):
+                last_budget_row = row
+    return last_budget_row
+
+
+def is_budget_row(row):
+    if not isinstance(row, dict) or row.get("type") != "attachment":
+        return False
+    attachment = row.get("attachment")
+    return isinstance(attachment, dict) and attachment.get("type") == "budget_usd"
+
+
 def token_count(tokens):
     if not isinstance(tokens, dict):
         return 0
@@ -411,9 +515,18 @@ def token_count(tokens):
     return total
 
 
-def add_usage(total, extra):
-    for field, value in extra.items():
-        total[field] = total.get(field, 0) + value
+def finish_usage(review_usage, repair_usage, elapsed_ms):
+    """Return the run's usage: the review's and the repair's summed, its duration at least elapsed_ms."""
+    usage = dict(review_usage)
+    for field, value in repair_usage.items():
+        # A review with no known cost has no known total; the repair's cost alone would understate it.
+        if field == "cost_usd" and field not in usage:
+            continue
+        usage[field] = usage.get(field, 0) + value
+    # Claude Code's duration_ms has reported 40 seconds for an eleven-minute review, so the
+    # adapter's own clock is the floor and the larger of the two is recorded.
+    usage["time_in_ms"] = max(usage.get("time_in_ms", 0), elapsed_ms)
+    return usage
 
 
 def read_text(path):
@@ -529,6 +642,7 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
     repair_timeout_seconds = float(env.get("RB_REPAIR_TIMEOUT_SECONDS") or 180)
     total_seconds = float(env.get("RB_TOTAL_SECONDS") or 1770)
     grace_seconds = float(env.get("RB_FINAL_GRACE_SECONDS") or 60)
+    interrupt_wait_seconds = float(env.get("RB_INTERRUPT_WAIT_SECONDS") or 20)
     review_dir = os.path.dirname(review_path) or "."
     session_arguments = [] if transcripts_kept else ["--no-session-persistence"]
 
@@ -547,6 +661,7 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
         "--output-format", "json",
         "--plugin-dir", PLUGIN_DIR,
         "--permission-mode", "bypassPermissions",
+        "--disallowedTools", "ScheduleWakeup",
         "--model", settings["model"],
         "--effort", settings["effort"],
         "--max-budget-usd", settings["budget_usd"],
@@ -565,15 +680,20 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
             review_path,
             stderr,
             account,
+            interrupt_wait_seconds=interrupt_wait_seconds,
         )
     usage = usage_of(stdout)
-    # Claude Code's duration_ms has reported 40 seconds for an eleven-minute review, so the
-    # adapter's own clock is the floor and the larger of the two is recorded.
-    elapsed_ms = int((time.monotonic() - started) * 1000)
-    usage["time_in_ms"] = max(usage.get("time_in_ms", 0), elapsed_ms)
-    if ended == "final":
-        evidence.log("ended claude {:.0f} s after the review file turned final".format(
-            time.time() - os.path.getmtime(review_path)
+    if "cost_usd" not in usage:
+        transcript_cost_usd = transcript_cost(claude_home(env))
+        if transcript_cost_usd is not None:
+            usage["cost_usd"] = transcript_cost_usd
+            evidence.log("cost {} read from the transcript's last budget line".format(transcript_cost_usd))
+        else:
+            evidence.log("no cost in the result and none in a transcript")
+    if ended in ("final", "interrupted"):
+        evidence.log("ended claude {:.0f} s after the review file turned final{}".format(
+            time.time() - os.path.getmtime(review_path),
+            grace_end_clause(ended, interrupt_wait_seconds),
         ))
     elif ended == "timeout":
         evidence.log("claude killed after {:.0f} seconds; reading the interim review file".format(timeout_seconds))
@@ -586,6 +706,7 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
         evidence.log("no review file at {}".format(review_path))
         return 1
 
+    repair_usage = {}
     candidates, refused, error = parse_review_file(review_path)
     if error is not None or refused:
         evidence.log("review file needs repair: {}".format(error or "{} refused entries".format(len(refused))))
@@ -620,7 +741,7 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
                 evidence.log("repair killed after {:.0f} seconds".format(repair_limit_seconds))
             else:
                 evidence.log("repair finished with exit code {}".format(repair_exit_code))
-            add_usage(usage, usage_of(repair_stdout))
+            repair_usage = usage_of(repair_stdout)
         else:
             evidence.log("no time left for the repair run; reading the review file as it is")
         candidates, refused, error = parse_review_file(review_path)
@@ -628,6 +749,8 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
             evidence.log("review file still does not parse after repair: {}".format(error))
             return 1
 
+    elapsed_ms = int((time.monotonic() - started) * 1000)
+    usage = finish_usage(usage, repair_usage, elapsed_ms)
     file_lists_no_findings = not candidates and not refused
     failed_arms = failed_arms_of(review_path)
     if file_lists_no_findings and failed_arms:

@@ -93,6 +93,18 @@ request's findings keeps `logs/<PR_Key>/`, or, when none holds them, the last
 source listed that has the folder; the other sources' copies go to
 `logs/<PR_Key>.before-<source folder name>/`.
 
+The review session runs with Claude Code's `ScheduleWakeup` tool disallowed.
+A session that scheduled a wakeup as a fallback while the review arms ran kept
+running for the timer after its review was done, so Claude Code never printed
+its result, and the adapter killed it with its cost lost. A session still
+running once the review file has been final for `RB_FINAL_GRACE_SECONDS` gets
+an interrupt, then `RB_INTERRUPT_WAIT_SECONDS` to exit on its own before the
+adapter kills it. When the result carries no cost, the adapter reads the
+session's spend from the last budget line of its transcript and says so in
+`adapter.log`; that line comes before the session's final request, so the
+cost can be a few cents short. This needs the transcript, so with
+`RB_KEEP_TRANSCRIPTS=0` a session that printed no result records no cost.
+
 `report.md` has a header naming the run and its commands, then the sections
 Overall, By severity, By category, Duration and cost, and Review health. Review
 health counts, from the `review.json` files, the readable and unreadable review
@@ -131,13 +143,18 @@ These three reach the image and are recorded in `run.json`:
 - `RB_CONFIG_BUDGET_USD`: the cost cap of one pull request's session in
   dollars, `15` by default.
 
-These two reach the image too, and are not recorded in `run.json`:
+These three reach the image too, and are not recorded in `run.json`:
 
 - `RB_KEEP_TRANSCRIPTS`: `1` by default, which copies Claude Code's session
   transcripts into the evidence; `0` runs Claude Code with
-  `--no-session-persistence` and copies none.
+  `--no-session-persistence` and copies none. With `0` Claude Code writes no
+  transcript, so the cost of a session the adapter ends after the grace is not
+  recovered.
 - `RB_FINAL_GRACE_SECONDS`: the seconds Claude Code may keep running after the
   review file turns final before the adapter ends it, `60` by default.
+- `RB_INTERRUPT_WAIT_SECONDS`: the seconds the adapter waits after
+  interrupting a session that outlived the grace before killing it, `20` by
+  default.
 
 ## Put it on the leaderboard
 

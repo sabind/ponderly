@@ -164,7 +164,8 @@ def usage_section(usages, findings_count):
         "",
         "Mean review duration: {}".format(mean_duration),
         "",
-        "Model cost is what Claude Code's own usage output reports the reviews cost, summed over the {} of {} "
+        "Model cost is what Claude Code's own usage output reports the reviews cost, or, for a session the adapter "
+        "ended that printed no result, what its transcript's last budget line recorded, summed over the {} of {} "
         "findings files that record it, then divided by that count for the mean.".format(len(costs), findings_count),
         "",
         "Total model cost: {}".format(total_cost),

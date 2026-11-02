@@ -1,14 +1,15 @@
 """Proves benchmarks/reviewbench/agent/agent.py, the ReviewBench adapter, end to end.
 
 Each test runs the adapter as a subprocess with python3 -I, as the image does,
-except one that calls run_claude in-process, and fakes Claude Code at its
+except those that call run_claude or finish_usage in-process, and fakes Claude Code at its
 boundary with the stub STUB_SOURCE, written into a temporary directory and
 named by RB_CLAUDE_BIN. STUB_PLAN tells the stub what each call does, one
 action per call separated by commas, the last action repeating; the stub
 appends a line per call to STUB_LOG with the CLAUDE_CODE_* variables,
 CLAUDE_CODE_OAUTH_TOKEN among them, ANTHROPIC_API_KEY and HOME it was given,
 the uid it ran as and its arguments. The time limits are scaled down to
-seconds through RB_TIMEOUT_SECONDS and RB_TOTAL_SECONDS.
+seconds through RB_TIMEOUT_SECONDS, RB_TOTAL_SECONDS, RB_FINAL_GRACE_SECONDS
+and RB_INTERRUPT_WAIT_SECONDS.
 """
 
 import datetime
@@ -31,6 +32,7 @@ OAUTH_TOKEN = "sk-ant-oat-test-7d1b3a"
 STUB_SOURCE = '''
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -77,6 +79,20 @@ def finish(result=RESULT):
     sys.exit(0)
 
 
+def write_transcript(lines):
+    session_dir = os.path.join(os.environ["HOME"], ".claude", "projects", "-work-repo")
+    os.makedirs(session_dir, exist_ok=True)
+    with open(os.path.join(session_dir, "session.jsonl"), "w", encoding="utf-8") as handle:
+        handle.write("".join(line + "\\n" for line in lines))
+
+
+def budget_row(used):
+    return json.dumps({"type": "attachment",
+                       "attachment": {"type": "budget_usd", "used": used, "total": 12,
+                                      "remaining": 12 - used},
+                       "timestamp": "2026-11-01T00:00:00Z"})
+
+
 if action == "good":
     write_review([GOOD])
     finish()
@@ -109,6 +125,10 @@ if action == "slow_with_a_short_duration":
     write_review([GOOD])
     finish({"total_cost_usd": 0.5, "duration_ms": 50,
             "usage": {"input_tokens": 1, "output_tokens": 1}})
+if action == "unparseable_without_result_or_budget":
+    write_unparseable()
+    write_transcript([json.dumps({"type": "user", "text": "review the pull request"})])
+    sys.exit(0)
 if action == "two_models":
     write_review([GOOD])
     finish({"total_cost_usd": 0.5, "duration_ms": 1234,
@@ -161,6 +181,20 @@ if action == "final_then_exit_shortly":
     write_review([GOOD])
     time.sleep(3)
     finish()
+if action == "final_then_result_on_interrupt":
+    signal.signal(signal.SIGINT, lambda number, frame: finish())
+    write_review([GOOD])
+    time.sleep(60)
+if action == "final_then_sleep_ignoring_interrupt":
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    write_review([GOOD])
+    write_transcript([budget_row(1.5), "{not json", budget_row(3.99)])
+    time.sleep(60)
+if action == "final_then_sleep_without_budget":
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    write_review([GOOD])
+    write_transcript([json.dumps({"type": "user", "text": "review the pull request"})])
+    time.sleep(60)
 if action == "marker_then_exit_5":
     with open(os.environ["STUB_EXIT_MARKER"], "w", encoding="utf-8"):
         pass
@@ -347,6 +381,34 @@ class TheFindingsFile(AdapterTestCase):
         completed = self.run_adapter("two_models")
         self.assertEqual(completed.returncode, 0)
         self.assertEqual(self.findings_file()["usage"]["total_tokens"], 1 + 2 + 3 + 4 + 10 + 20 + 30 + 40)
+
+
+class TheFinalUsage(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location("reviewbench_agent", AGENT)
+        cls.agent = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.agent)
+
+    def test_a_review_and_repair_reporting_less_than_the_adapters_clock_record_the_clock_not_their_sum(self):
+        usage = self.agent.finish_usage({"time_in_ms": 50}, {"time_in_ms": 100}, 5000)
+        self.assertEqual(usage["time_in_ms"], 5000)
+
+    def test_a_review_and_repair_reporting_more_than_the_adapters_clock_record_their_sum(self):
+        usage = self.agent.finish_usage({"time_in_ms": 50}, {"time_in_ms": 100}, 10)
+        self.assertEqual(usage["time_in_ms"], 150)
+
+    def test_a_repair_cost_beside_a_review_with_no_cost_leaves_the_cost_absent(self):
+        usage = self.agent.finish_usage({"time_in_ms": 50}, {"cost_usd": 0.3}, 10)
+        self.assertNotIn("cost_usd", usage)
+
+    def test_a_repair_cost_beside_a_review_cost_records_their_sum(self):
+        usage = self.agent.finish_usage({"cost_usd": 2.0}, {"cost_usd": 0.3}, 10)
+        self.assertAlmostEqual(usage["cost_usd"], 2.3)
+
+    def test_the_review_and_repair_total_tokens_record_their_sum(self):
+        usage = self.agent.finish_usage({"total_tokens": 1000}, {"total_tokens": 25}, 10)
+        self.assertEqual(usage["total_tokens"], 1025)
 
 
 class ClaudeCodeIsGivenTheSettings(AdapterTestCase):
@@ -574,6 +636,82 @@ class TheGraceEndNeverComesEarly(AdapterTestCase):
         self.assertEqual(len(checks), 1)
         self.assertEqual(exit_code, 5)
         self.assertIsNone(ended)
+
+
+class TheReviewSessionIsNeverOfferedTheWakeupTool(AdapterTestCase):
+    """Property 1: The review session is never offered the wakeup tool."""
+
+    def test_the_review_launch_disallows_schedule_wakeup_and_the_repair_launch_disallows_nothing(self):
+        self.run_adapter("unparseable,good")
+        review_call, repair_call = self.stub_calls()
+        review_argv = review_call["argv"]
+        flag_at = review_argv.index("--disallowedTools")
+        self.assertEqual(review_argv[flag_at + 1], "ScheduleWakeup")
+        self.assertNotIn("--disallowedTools", repair_call["argv"])
+
+
+class AGraceEndAlwaysTriesTheInterruptBeforeTheKill(AdapterTestCase):
+    """Property 2: A grace end always tries the interrupt before the kill."""
+
+    def setUp(self):
+        super().setUp()
+        self.env["HOME"] = os.path.join(self.directory, "home")
+
+    def test_a_session_that_exits_on_the_interrupt_exits_0_with_the_cost_of_its_result_and_a_log_line(self):
+        completed = self.run_adapter(
+            "final_then_result_on_interrupt",
+            RB_FINAL_GRACE_SECONDS="1", RB_TIMEOUT_SECONDS="8", RB_INTERRUPT_WAIT_SECONDS="2",
+        )
+        self.assertEqual(completed.returncode, 0)
+        self.assertEqual(self.findings_file()["usage"]["cost_usd"], 0.5)
+        adapter_log = self.evidence_bytes("adapter.log").decode("utf-8")
+        self.assertRegex(adapter_log, r"turned final; it exited on the interrupt")
+
+    def test_a_session_ignoring_the_interrupt_is_killed_after_the_wait_with_exit_0_and_a_log_line(self):
+        started = time.monotonic()
+        completed = self.run_adapter(
+            "final_then_sleep_ignoring_interrupt",
+            RB_FINAL_GRACE_SECONDS="1", RB_TIMEOUT_SECONDS="8", RB_INTERRUPT_WAIT_SECONDS="2",
+        )
+        elapsed = time.monotonic() - started
+        self.assertEqual(completed.returncode, 0)
+        self.assertGreaterEqual(elapsed, 3)
+        adapter_log = self.evidence_bytes("adapter.log").decode("utf-8")
+        self.assertRegex(adapter_log, r"turned final; it ignored the interrupt and was killed")
+
+
+class ASessionsCostIsRecordedWheneverASourceHoldsIt(AdapterTestCase):
+    """Property 3: A session's cost is recorded whenever a source holds it."""
+
+    def setUp(self):
+        super().setUp()
+        self.env["HOME"] = os.path.join(self.directory, "home")
+
+    def test_the_cost_of_a_session_that_printed_no_result_is_read_from_the_transcripts_last_budget_row(self):
+        completed = self.run_adapter(
+            "final_then_sleep_ignoring_interrupt",
+            RB_FINAL_GRACE_SECONDS="1", RB_TIMEOUT_SECONDS="8", RB_INTERRUPT_WAIT_SECONDS="2",
+        )
+        self.assertEqual(completed.returncode, 0)
+        self.assertEqual(self.findings_file()["usage"]["cost_usd"], 3.99)
+        adapter_log = self.evidence_bytes("adapter.log").decode("utf-8")
+        self.assertIn("cost 3.99 read from the transcript's last budget line", adapter_log)
+
+    def test_no_cost_in_the_result_and_no_budget_row_in_the_transcript_leaves_the_cost_absent_and_logs_it(self):
+        completed = self.run_adapter(
+            "final_then_sleep_without_budget",
+            RB_FINAL_GRACE_SECONDS="1", RB_TIMEOUT_SECONDS="8", RB_INTERRUPT_WAIT_SECONDS="2",
+        )
+        self.assertEqual(completed.returncode, 0)
+        self.assertNotIn("cost_usd", self.findings_file()["usage"])
+        adapter_log = self.evidence_bytes("adapter.log").decode("utf-8")
+        self.assertIn("no cost in the result and none in a transcript", adapter_log)
+
+    def test_a_repair_reporting_a_cost_after_a_review_with_no_cost_leaves_the_cost_absent(self):
+        completed = self.run_adapter("unparseable_without_result_or_budget,good")
+        self.assertEqual(completed.returncode, 0)
+        self.assertEqual(len(self.stub_calls()), 2)
+        self.assertNotIn("cost_usd", self.findings_file()["usage"])
 
 
 if __name__ == "__main__":
