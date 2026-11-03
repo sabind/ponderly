@@ -68,7 +68,7 @@ try_agent() {
     TRY_AGENT_WORK="$try_agent_work" \
       "$clone/scripts/try-agent.sh" "$IMAGE" "$@" \
       -e ANTHROPIC_API_KEY -e CLAUDE_CODE_OAUTH_TOKEN -e RB_CONFIG_MODEL -e RB_CONFIG_EFFORT -e RB_CONFIG_BUDGET_USD \
-      -e RB_KEEP_TRANSCRIPTS -e RB_FINAL_GRACE_SECONDS -e RB_INTERRUPT_WAIT_SECONDS
+      -e RB_KEEP_TRANSCRIPTS -e RB_FINAL_GRACE_SECONDS -e RB_INTERRUPT_WAIT_SECONDS -e RB_SEARCH
   ) 2>&1 | tee -a "$run_dir/logs/try-agent.log"
 }
 
@@ -170,7 +170,7 @@ run_set() {
     *) usage ;;
   esac
 
-  # Recorded and passed through by name, so run.json names what the adapter used.
+  # These and RB_SEARCH are recorded and passed through by name, so run.json names what the adapter used.
   export RB_CONFIG_MODEL="${RB_CONFIG_MODEL:-opus}"
   export RB_CONFIG_EFFORT="${RB_CONFIG_EFFORT:-high}"
   export RB_CONFIG_BUDGET_USD="${RB_CONFIG_BUDGET_USD:-15}"
@@ -186,7 +186,8 @@ run_set() {
     --arg plugin_version "$(jq -r .version "$plugin_manifest")" \
     --arg started "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg command "$command" \
-    '{set: $set, model: $model, effort: $effort, budget_usd: ($budget_usd | tonumber? // $budget_usd), image: $image,
+    --argjson search "$([ "${RB_SEARCH:-}" = 1 ] && echo true || echo false)" \
+    '{set: $set, model: $model, effort: $effort, budget_usd: ($budget_usd | tonumber? // $budget_usd), search: $search, image: $image,
       plugin_version: $plugin_version, started: $started, commands: [$command],
       judge_model: null, judge_base_url: null}' > "$run_dir/run.json"
   if [ "$set_kind" = prs ]; then
@@ -233,7 +234,7 @@ evidence_keeper() {
 collect() {
   local command="$1"; shift
   local first="$1" source_dir earlier finding name evidence target
-  local shared_fields='{model, effort, budget_usd, image, plugin_version}'
+  local shared_fields='{model, effort, budget_usd, search: (.search // false), image, plugin_version}'
   for source_dir in "$@"; do
     if [ ! -f "$source_dir/run.json" ]; then
       echo "no run.json in $source_dir; RUNS lists run folders as make pr, prs, test-set or full-set printed them" >&2; exit 1
@@ -289,9 +290,9 @@ collect() {
   jq -s \
     --arg started "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg command "$command" \
-    '{set: "collected", model: .[0].model, effort: .[0].effort, budget_usd: .[0].budget_usd, image: .[0].image,
-      plugin_version: .[0].plugin_version, started: $started, commands: ([.[].commands[]] + [$command]),
-      sources: $ARGS.positional, judge_model: null, judge_base_url: null}' \
+    '{set: "collected", model: .[0].model, effort: .[0].effort, budget_usd: .[0].budget_usd,
+      search: (.[0].search // false), image: .[0].image, plugin_version: .[0].plugin_version, started: $started,
+      commands: ([.[].commands[]] + [$command]), sources: $ARGS.positional, judge_model: null, judge_base_url: null}' \
     "${records[@]}" --args "$@" > "$run_dir/run.json"
   echo "run folder: $run_dir" >&2
 }

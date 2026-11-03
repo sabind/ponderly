@@ -90,7 +90,9 @@ never in CI, and [the evidence](docs/evidence.md) shows what they found.
   before the next, and `implement-spec` never edits the spec beyond its
   checkboxes without your approval.
 - The plugin itself does not read a credential or send anything anywhere
-  except through `git` and `gh` to your repository's own remote.
+  except through `git` and `gh` to your repository's own remote, and the
+  `review-arm` agent's web searches, which name only a tool outside the
+  repository and the behaviour in question, never your code.
   The `task-executor` agent and the `readable-code` and `tighten-tests`
   skills also run the project's own tests, and the two skills its other
   tools, which do whatever they do in that project. `tighten-tests` adds a

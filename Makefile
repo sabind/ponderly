@@ -98,14 +98,14 @@ eval-skill-start-task: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-strategy: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-hld: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-lld: CASE_ARGS += --allow-tools Write Edit --scaffold
-eval-skill-readable-code: CASE_ARGS += --allow-tools Bash Write Edit Agent --scaffold
+eval-skill-readable-code: CASE_ARGS += --allow-tools Bash Write Edit --scaffold
 eval-skill-readable-code: export PATH := bin:$(PATH)
 eval-skill-bugfix: CASE_ARGS += --allow-tools Bash Write Edit --scaffold
 eval-skill-bugfix: export PATH := bin:$(PATH)
-eval-skill-tighten-tests: CASE_ARGS += --allow-tools Bash Write Edit Agent --scaffold
+eval-skill-tighten-tests: CASE_ARGS += --allow-tools Bash Write Edit --scaffold
 eval-skill-tighten-tests: export PATH := bin:$(PATH)
 eval-rule-code-changes: CASE_ARGS += --allow-tools Write Edit --scaffold
-eval-rule-tests: CASE_ARGS += --allow-tools Bash Write Edit Agent --scaffold
+eval-rule-tests: CASE_ARGS += --allow-tools Bash Write Edit --scaffold
 eval-rule-tests: export PATH := bin:$(PATH)
 eval-rule-communication: CASE_ARGS += --allow-tools Bash Write Edit --scaffold
 eval-rule-communication: export PATH := bin:$(PATH)
@@ -118,6 +118,8 @@ eval-skill-review: EVAL_MAX_COST_USD = 10
 eval-skill-review: export PATH := bin:$(PATH)
 eval-agent-review-arm: CASE_ARGS += --allow-tools Bash --scaffold
 eval-agent-review-arm: export PATH := bin:$(PATH)
+eval-agent-review-arm-search: CASE_ARGS += --allow-tools Bash WebSearch --scaffold
+eval-agent-review-arm-search: export PATH := bin:$(PATH)
 
 # Runs all evals and needs all flags
 eval: CASE_ARGS += --scaffold

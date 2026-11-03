@@ -17,8 +17,9 @@
 #
 # The run targets and collect print the run folder to pass as RUN. RB_CONFIG_MODEL,
 # RB_CONFIG_EFFORT, RB_CONFIG_BUDGET_USD, RB_KEEP_TRANSCRIPTS,
-# RB_FINAL_GRACE_SECONDS and RB_INTERRUPT_WAIT_SECONDS in the environment
-# reach the adapter in the image; run.json records the first three.
+# RB_FINAL_GRACE_SECONDS, RB_INTERRUPT_WAIT_SECONDS and RB_SEARCH in the
+# environment reach the adapter in the image; run.json records the first three
+# and RB_SEARCH, as search.
 
 REVIEWBENCH_COMMIT ?= 228f2a8d662c9c1c12d25757e23c52c9a6170d5a
 IMAGE ?= ponderly-review:dev

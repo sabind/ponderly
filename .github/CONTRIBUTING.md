@@ -105,6 +105,7 @@ make eval-agent-task-executor       # the task-executor agent
 make eval-agent-wave-reviewer       # the wave-reviewer agent
 make eval-agent-document-reviewer   # the document-reviewer agent
 make eval-agent-review-arm          # the review-arm agent
+make eval-agent-review-arm-search   # the review-arm agent's web-search case
 make eval                           # everything
 make eval-skill-pr EVAL_ARGS="--runs 2 --ablation with-without"   # pass extra flags through
 make eval EVAL_MAX_COST_USD=5                                     # raise the per-invocation cost ceiling
@@ -120,7 +121,9 @@ cases' scaffold scripts, whose project trees live under `evals/fixtures/`;
 `--allow-tools` for the tools the skill or agent under test needs, such as
 Bash, Write and Edit; and `bin` first on the PATH for the wrappers the scaffolds
 write, wherever Bash is granted. `eval` carries the union so the whole suite
-runs. Each invocation runs under a list-price ceiling, `EVAL_MAX_COST_USD`,
+runs, except web search: only `eval-agent-review-arm-search` grants it, so
+that target's case runs only under its own target and fails under `make eval`.
+Each invocation runs under a list-price ceiling, `EVAL_MAX_COST_USD`,
 default $2. `make eval-skill-review` defaults to $10, because one review
 launches six to eleven agents; a value on the command line still wins.
 

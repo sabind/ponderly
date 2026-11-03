@@ -310,9 +310,15 @@ findings, each anchored to lines at the head.
 - **What it does:** it reads its lenses file,
   `plugins/ponderly/skills/review/lenses.md`, whose `##` sections are the
   lenses: correctness, reliability, security, maintainability, documentation
-  and testing. It launches one `review-arm` agent per lens, all at the same
-  time. The documentation arm reads each changed prose and configuration file
-  and searches the repository for documentation naming what the change
+  and testing. A file the change moved or renamed is touched in every line,
+  and the list of changed files the skill sends the arms marks it with its old
+  path. It launches one `review-arm` agent per lens, all at the same time, and
+  an arm whose block lacks its `read:` list is treated as having returned
+  nothing in the right shape. The testing arm lists each behaviour the change
+  introduces or alters before it reads the tests, and reports, at the
+  behaviour's own place in the code, each one that no test would catch
+  breaking. The documentation arm reads each changed prose and configuration
+  file and searches the repository for documentation naming what the change
   renamed, removed or altered. Each arm puts a finding at each place a defect
   needs its own edit, in whatever file it is, each naming the others; when an
   edit at either of two places alone would fix it, the arm puts one at the
@@ -366,22 +372,26 @@ findings, each anchored to lines at the head.
   removed, which add up with the final list to the candidates,
   the wave review's verdict, any failed arm, how many wave-review findings
   were folded and how many could not be anchored, which arms ran again or
-  that none did, how many team-rule departures the wave review left out as
-  `departures not reported`, and whether the budget stopped the second pass;
+  that none did, `touched files no arm read`, how many changed files present
+  at the head no arm says it read whole, how many team-rule departures the
+  wave review left out as `departures not reported`, and whether the budget
+  stopped the second pass;
   after it, one line for each remark an arm made about the change as a
   whole, which is never a finding.
   With `--json <path>`, it writes the same findings and counts as JSON to
   that path, which must be outside the repository or ignored by it, and
   replies with the path, the count line and the remark lines; the counts
-  include `folded`, `not_anchored` and `relaunched`. Beside the findings, the
-  JSON file holds a `not_reported` list of what the review left out, each
-  entry with its file, quote, problem and the reason: a team-rule departure
-  without cost, a lead the wave review left unsettled, a wave-review finding
-  that could not be anchored, one a relaunched arm dropped, or an arm's
-  remark about the change as a whole, with reason `change remark`. It
-  changes no tracked file in the repository and commits nothing; the one
-  file it writes is the `--json` file, outside the repository or ignored by
-  it.
+  include `folded`, `not_anchored`, `relaunched` and `files_unread`, the
+  count line's touched files no arm read. A `read` object maps each lens
+  whose arm the merge took to the list of files that arm read, across both
+  passes for an arm run again. Beside the findings, the JSON file holds a
+  `not_reported` list of what the review left out, each entry with its file,
+  quote, problem and the reason: a team-rule departure without cost, a lead
+  the wave review left unsettled, a wave-review finding that could not be
+  anchored, one a relaunched arm dropped, or an arm's remark about the change
+  as a whole, with reason `change remark`. It changes no tracked file in the
+  repository and commits nothing; the one file it writes is the `--json` file,
+  outside the repository or ignored by it.
 - **Hands off to:** nothing; you decide what to do with the findings.
 
 ### pr
@@ -563,7 +573,23 @@ only when it costs the change something concrete. It puts a finding at each
 place a defect needs its own edit, sweeps the other changed files and the call
 sites it read for copies of a defect it verified that comes from a pattern,
 and reads a function or endpoint the change newly depends on from its
-signature through every guard before the branch the change uses; a remark
+signature through every guard before the branch the change uses. It reads
+every changed file whole, a moved file included. When a problem rests on
+what a tool, library or service outside the repository does and the
+repository cannot settle it, it uses a web search tool when one is offered:
+a query names only that tool and the behaviour in question, never the
+repository's code, a file name from it, its name or the pull request, and
+the arm never opens the pull request or its repository on any host and uses
+no GitHub tool. Run by hand, whether a search runs is the host's permission
+decision: in the default permission mode the host asks on the first use, and a
+user who already allowed web search, or runs in a mode that skips prompts, is
+not asked. Without search, when a search is refused or fails, or when it does
+not settle the claim, the claim is one `unsure` entry saying it is unverified,
+and no finding rests on it. Its tools are `Read`, `Glob`,
+`Grep`, `Bash`, `LSP` and `WebSearch`, with no `WebFetch`. The testing lens
+has it list each behaviour the change introduces or alters before reading the
+tests, and report at the behaviour's place in the code each one with no test
+that would fail if it broke, naming the test that would cover it. A remark
 about the change as a whole goes under `unsure`, never into a finding.
 
 - **Launched by:** the `review` skill, once per lens of its lenses file, all
@@ -571,8 +597,9 @@ about the change as a whole goes under `unsure`, never into a finding.
   findings the wave review contradicted, when the budget allows.
 - **What the prompt carries:** the standard every lens shares and the lens's
   own section, quoted from the lenses file; the range, a base commit and a
-  head commit or the working tree; the changed files; and the pull request's
-  title and body. For the second pass, it also carries the `wave-reviewer`'s
+  head commit or the working tree; the changed files, each moved file marked
+  `(moved from <old path>, unchanged)`; and the pull request's title and
+  body. For the second pass, it also carries the `wave-reviewer`'s
   Findings and the first pass's merged findings, and the arm keeps, withdraws
   or adds to its own.
 - **What it returns:** an arm block: the `lens`, then each finding with its
@@ -581,7 +608,9 @@ about the change as a whole goes under `unsure`, never into a finding.
   `message` saying what is wrong, why it matters and what would fix it; then
   what it is `unsure` of, where each problem it noticed outside its lens is an
   entry that begins `outside lens:` and names its file and line, and a remark
-  about the change as a whole is an entry that begins `change remark:`.
+  about the change as a whole is an entry that begins `change remark:`; then
+  `read`, every file it read, one entry per file, as `<path>: whole` or
+  `<path>: <start>-<end>` with further ranges after `, `, or `read: []`.
 
 ### The report protocol
 
@@ -839,10 +868,15 @@ agent writes nothing.
 The `SessionStart` and `SubagentStart` hooks read only the files under the
 plugin's `rules/` folder.
 
-No skill, agent or hook reads a credential, runs a package launcher or sends
-anything anywhere else. The project's own tests, synthesis command, coverage
-tool and package manager, which the skills and agent above run, do whatever they do in
-that project.
+No skill, agent or hook reads a credential or runs a package launcher, and
+none sends anything anywhere else but the web search queries of the
+`review-arm` agent. When the host offers a web search tool, `review-arm` may
+send queries through it to settle what a tool outside the repository does; a
+query holds only that tool's name and the behaviour in question, never the
+repository's code, a file name from it, the repository's name or the pull
+request. The project's own tests, synthesis command, coverage tool and package
+manager, which the skills and agent above run, do whatever they do in that
+project.
 
 The source repository's `evals/` and `.ponderly/specs/` folders are its test
 suite and its design records. They sit outside the plugin, and an installed

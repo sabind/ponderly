@@ -6,7 +6,7 @@ Reads the judge's ``scoring/results.json``, the ``usage`` of every
 ``findings/*.json``, every ``logs/<PR_Key>/review.json``, and the ``run.json`` the harness writes, then writes
 ``report.md`` into the run folder and prints it. A field ``run.json`` lacks is
 reported as "unknown", except the plugin version, which is then read from
-``plugin.json`` and marked so. Exits 1 naming the file when ``scoring/results.json``
+``plugin.json`` and marked so, and web search, which is then reported as off. Exits 1 naming the file when ``scoring/results.json``
 is absent, since the ``judge`` target writes it.
 """
 
@@ -260,7 +260,8 @@ def health_section(reviews, findings_count):
         "as unreadable and left out of every other line. A review that failed keeps its review file but writes "
         "no findings file, so the review-file count can exceed the findings-file count. Review files from later "
         "runs also record which lenses the second pass relaunched, how many wave reviewer findings were folded "
-        "into the review or could not be anchored, and how many team-rule departures were not reported; older "
+        "into the review or could not be anchored, how many team-rule departures were not reported, and how "
+        "many touched files no arm read; older "
         "files lack these counts, so each of those lines says how many review files record it, and a count of "
         "the wrong type is left out of its line.",
         "",
@@ -279,6 +280,7 @@ def health_section(reviews, findings_count):
         recorded_total_line("Wave reviewer findings folded", readable, "folded"),
         recorded_total_line("Wave reviewer findings not anchored", readable, "not_anchored"),
         recorded_total_line("Team-rule departures not reported", readable, "departures_not_reported"),
+        recorded_total_line("Touched files no arm read", readable, "files_unread"),
     ]
     if readable:
         candidates = [review["counts"]["candidates"] for review in readable]
@@ -308,6 +310,7 @@ def header_section(run_info, results):
         "- Plugin version: {}".format(plugin_version_line(run_info)),
         "- Model: {}".format(run_info.get("model", UNKNOWN)),
         "- Effort: {}".format(run_info.get("effort", UNKNOWN)),
+        "- Search: {}".format("on" if run_info.get("search") is True else "off"),
         "- Set: {}".format(run_info.get("set", UNKNOWN)),
         "- Judge model: {}".format(run_info.get("judge_model", UNKNOWN)),
         "- Image: {}".format(run_info.get("image", UNKNOWN)),

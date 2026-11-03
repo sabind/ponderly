@@ -88,12 +88,14 @@ Set any of these on the `make` command line or in your environment.
   for an OpenAI judge. The report leaves out any review whose judging had
   failed calls and lists it under Judge errors.
 
-These three reach the image and are recorded in `run.json`:
+These four reach the image and are recorded in `run.json`:
 
 - `RB_CONFIG_MODEL`: the Claude model the review runs on, `opus` by default.
 - `RB_CONFIG_EFFORT`: its effort level, `high` by default.
 - `RB_CONFIG_BUDGET_USD`: the cost cap of one pull request's session in
   dollars, `15` by default.
+- `RB_SEARCH`: whether the review arms can use `WebSearch`, recorded as
+  `search`, `0` by default, which disallows it; `1` lets the arms search.
 
 These three reach the image but are not recorded in `run.json`:
 

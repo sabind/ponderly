@@ -41,7 +41,7 @@ runs the one that fits.
 - `bugfix`: when you have a bug to fix, starting from its ticket.
 - `readable-code`: when you want the code a branch changes to read plainly, with no behaviour change.
 - `tighten-tests`: when you want a branch's tests slimmed to the ones that prove something, with the suite proved no weaker.
-- `review`: when you want a pull request, a branch or a range of commits reviewed; it reads the change through each lens at once and returns findings anchored to lines.
+- `review`: when you want a pull request, a branch or a range of commits reviewed; it reads the change through each lens at once and returns findings anchored to lines, counts a moved or renamed file as touched in every line, and says how many touched files no arm read whole.
 - `pr`: when you want to open or update a pull request for the current branch.
 - `report`: when work comes back, a decision is open, or you ask for status or why something happened; the session usually runs it for you.
 
@@ -52,7 +52,7 @@ Each skill's arguments, questions and outputs are in the Reference's [Skills](ht
 - `task-executor`: builds one well-specified change, from a spec task or a change you describe, and proves it.
 - `wave-reviewer`: reviews one set of changes against the requirements and design they implement.
 - `document-reviewer`: reviews one strategy, high level design or low level design against its template and its parent.
-- `review-arm`: reviews one pull request through one lens, such as correctness or security, and returns the problems it verified, each anchored to its lines.
+- `review-arm`: reviews one pull request through one lens, such as correctness or security, and returns the problems it verified, each anchored to its lines, with the list of files it read; it reads every changed file whole, a moved one included, settles what a tool outside the repository does with web search when offered and when the host's permissions allow it, which by default means asking you on first use, with queries that carry nothing of the repository or the pull request, and through the testing lens lists each behaviour the change introduces or alters and reports each one no test would catch.
 
 How to launch each agent, what its prompt carries and what it returns are in the Reference's [Agents](https://github.com/sabind/ponderly/blob/main/docs/reference.md#agents) section.
 
@@ -116,10 +116,15 @@ agent writes nothing.
 The `SessionStart` and `SubagentStart` hooks read only the files under the
 plugin's `rules/` folder.
 
-No skill, agent or hook reads a credential, runs a package launcher or sends
-anything anywhere else. The project's own tests, synthesis command, coverage
-tool and package manager, which the skills and agent above run, do whatever they do in
-that project.
+No skill, agent or hook reads a credential or runs a package launcher, and
+none sends anything anywhere else but the web search queries of the
+`review-arm` agent. When the host offers a web search tool, `review-arm` may
+send queries through it to settle what a tool outside the repository does; a
+query holds only that tool's name and the behaviour in question, never the
+repository's code, a file name from it, the repository's name or the pull
+request. The project's own tests, synthesis command, coverage tool and package
+manager, which the skills and agent above run, do whatever they do in that
+project.
 
 The source repository's `evals/` and `.ponderly/specs/` folders are its test
 suite and its design records. They sit outside the plugin, and an installed

@@ -9,10 +9,11 @@ script, and writes and prints
 ``<run folder>/report.md``: precision, recall and F1 for each reviewed tool
 under Martian's Strict, Core and All profiles, scored as Martian's dashboard
 scores them, with the judge model, the image settings and the date taken from
-``<run folder>/run.json`` ("unknown" for any field it lacks). A review whose
-judging had failed calls is left out of the scores and named at the top, and
-when every review's judging failed the report says there is no score. Exits 1
-naming the file or folder that is missing.
+``<run folder>/run.json`` ("unknown" for any field it lacks, except search,
+which reads as off). A review whose judging had failed calls is left out of
+the scores and named at the top, and when every review's judging failed the
+report says there is no score. Exits 1 naming the file or folder that is
+missing.
 """
 
 import json
@@ -128,8 +129,9 @@ def render(totals, run, failures=()):
         "- Date: {}".format(run.get("started", UNKNOWN)),
         "- Judge model: {}".format(run.get("judge_model", UNKNOWN)),
         "- Judge endpoint: {}".format(run.get("judge_base_url", UNKNOWN)),
-        "- Image settings: image {}, model {}, effort {}".format(
-            run.get("image", UNKNOWN), run.get("model", UNKNOWN), run.get("effort", UNKNOWN)),
+        "- Image settings: image {}, model {}, effort {}, search {}".format(
+            run.get("image", UNKNOWN), run.get("model", UNKNOWN), run.get("effort", UNKNOWN),
+            "on" if run.get("search") is True else "off"),
         "- Commands: {}".format("; ".join("`{}`".format(c) for c in commands) or UNKNOWN),
         "",
         "Martian's judge matched each review's findings against the human golden comments "

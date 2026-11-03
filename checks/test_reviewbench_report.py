@@ -2,10 +2,10 @@
 
 The report states each metric group of the judge's results, computes grounded
 F1, sums the model cost Claude Code reported, names the run's settings from
-``run.json`` or says they are unknown, counts the review files' verdicts, second
+``run.json`` or says they are unknown, with search off when it records none, counts the review files' verdicts, second
 passes, relaunched and failed arms, candidates and the final pass's folded,
-not-anchored and unreported-departure counts in its review health section, and exits 1
-naming the judge target when the judge's results file is absent.
+not-anchored, unreported-departure and touched-files-no-arm-read counts in its review
+health section, and exits 1 naming the judge target when the judge's results file is absent.
 """
 
 import contextlib
@@ -198,6 +198,18 @@ class ReviewBenchReportTest(unittest.TestCase):
             written,
         )
 
+    def test_a_run_record_with_search_true_prints_search_on(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run_dir = make_run(folder, results=results_with_every_group(), run_record={**RUN_RECORD, "search": True})
+            written = report.render_report(run_dir)
+        self.assertIn("- Search: on", written)
+
+    def test_a_run_record_without_search_prints_search_off(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
+            written = report.render_report(run_dir)
+        self.assertIn("- Search: off", written)
+
     def test_no_run_record_reports_settings_unknown_and_reads_the_version_from_plugin_json(self):
         manifest = json.loads(Path(report.PLUGIN_MANIFEST).read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as folder:
@@ -315,6 +327,19 @@ class ReviewBenchReportTest(unittest.TestCase):
         self.assertIn("- Wave reviewer findings folded: not recorded in this run's review files", health)
         self.assertIn("- Wave reviewer findings not anchored: not recorded in this run's review files", health)
         self.assertIn("- Team-rule departures not reported: not recorded in this run's review files", health)
+
+    def test_touched_files_no_arm_read_totals_the_review_files_that_record_it_and_counts_the_others(self):
+        recorded = review_file("findings", True, 10, 2, 3, [])
+        recorded["counts"]["files_unread"] = 3
+        older = review_file("holds", False, 4, 1, 0, [])
+        with tempfile.TemporaryDirectory() as folder:
+            run_dir = make_run(folder, results=results_with_every_group(), run_record=RUN_RECORD)
+            write_json(run_dir / "logs" / "pr-0" / "review.json", recorded)
+            write_json(run_dir / "logs" / "pr-1" / "review.json", older)
+            health = health_text(run_dir)
+        self.assertIn("- Pull requests with a readable review file: 2", health)
+        self.assertIn("- Unreadable review files: 0", health)
+        self.assertIn("- Touched files no arm read: 3 on 1 pull request(s) (recorded by 1 of 2 review files)", health)
 
     def test_a_wrong_typed_final_pass_count_is_skipped_and_the_review_file_stays_readable(self):
         wrong = review_file("findings", True, 10, 2, 3, [])

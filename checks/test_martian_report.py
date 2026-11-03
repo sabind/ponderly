@@ -3,7 +3,8 @@
 Martian's judge counts a comparison whose model call failed as no match, so a
 review whose judging had failed calls would score as if its findings missed.
 The report leaves such a review out of the scores and names it under Judge
-errors, and says there is no score when every review's judging failed.
+errors, and says there is no score when every review's judging failed. Its
+header says whether web search was on, from run.json's search.
 """
 
 import json
@@ -57,8 +58,10 @@ class ReportJudgeErrorsTest(unittest.TestCase):
         write_json(os.path.join(self.golden_folder, "repo.json"),
                    [{"comments": [{"comment": "Golden bug", "category": "bug"}]}])
 
-    def report(self, evaluations):
+    def report(self, evaluations, run=None):
         write_json(os.path.join(self.run_folder, "scoring", "evaluations.json"), evaluations)
+        if run is not None:
+            write_json(os.path.join(self.run_folder, "run.json"), run)
         result = subprocess.run([sys.executable, REPORT, self.run_folder, self.golden_folder],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -84,6 +87,18 @@ class ReportJudgeErrorsTest(unittest.TestCase):
 
         self.assertNotIn("Judge errors", text)
         self.assertIn("| ponderly | 1 | 50.0% | 100.0% | 66.7% | 1 | 1 | 0 |", text)
+
+    def test_a_run_recording_search_true_ends_the_image_settings_line_with_search_on(self):
+        text = self.report({JUDGED_URL: {"ponderly": judged_review()}},
+                           {"image": "ponderly-review", "model": "opus", "effort": "high", "search": True})
+
+        self.assertIn("- Image settings: image ponderly-review, model opus, effort high, search on\n", text)
+
+    def test_a_run_recording_no_search_ends_the_image_settings_line_with_search_off(self):
+        text = self.report({JUDGED_URL: {"ponderly": judged_review()}},
+                           {"image": "ponderly-review", "model": "opus", "effort": "high"})
+
+        self.assertIn("- Image settings: image ponderly-review, model opus, effort high, search off\n", text)
 
 
 if __name__ == "__main__":

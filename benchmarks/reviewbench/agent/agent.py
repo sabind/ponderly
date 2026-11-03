@@ -51,14 +51,15 @@ FINDINGS_SHAPE = (
     '"second_pass": true or false, "counts": {"candidates": integer, '
     '"removed_by_merge": integer, '
     '"removed_by_review": integer, "departures_not_reported": integer, "folded": integer, '
-    '"not_anchored": integer, "relaunched": [string], '
+    '"not_anchored": integer, "files_unread": integer, "relaunched": [string], '
     '"failed_arms": [string]}, "findings": [{"file": string, '
     '"start_line": integer, "end_line": integer, '
     '"severity": "high", "medium" or "low", "category": string, '
     '"message": string}], "not_reported": [{"file": string or null, '
     '"quote": string or null, "problem": string, '
     '"reason": "team-rule departure without cost", "unsettled lead", '
-    '"not anchored", "dropped by relaunched arm" or "change remark"}]}'
+    '"not anchored", "dropped by relaunched arm" or "change remark"}], '
+    '"read": {lens: [string]}}'
 )
 
 
@@ -625,6 +626,8 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
 
     settings = read_settings(env)
     evidence.log("model={model} effort={effort} budget_usd={budget_usd}".format(**settings))
+    search_on = env.get("RB_SEARCH") == "1"
+    evidence.log("search on" if search_on else "search off")
 
     pr_json_path = env.get("RB_PR_JSON") or "/work/pr/pr.json"
     pr_text = read_text(pr_json_path)
@@ -645,6 +648,7 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
     interrupt_wait_seconds = float(env.get("RB_INTERRUPT_WAIT_SECONDS") or 20)
     review_dir = os.path.dirname(review_path) or "."
     session_arguments = [] if transcripts_kept else ["--no-session-persistence"]
+    disallowed_tools = ["ScheduleWakeup"] if search_on else ["ScheduleWakeup", "WebSearch"]
 
     try:
         account = claude_account(env, evidence)
@@ -661,7 +665,7 @@ def review_pull_request(env, evidence, review_path, transcripts_kept, started):
         "--output-format", "json",
         "--plugin-dir", PLUGIN_DIR,
         "--permission-mode", "bypassPermissions",
-        "--disallowedTools", "ScheduleWakeup",
+        "--disallowedTools", *disallowed_tools,
         "--model", settings["model"],
         "--effort", settings["effort"],
         "--max-budget-usd", settings["budget_usd"],

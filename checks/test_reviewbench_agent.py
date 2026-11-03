@@ -271,6 +271,10 @@ class AdapterTestCase(unittest.TestCase):
         with open(self.evidence_path(*names), "rb") as handle:
             return handle.read()
 
+    def adapter_log_entries(self):
+        lines = self.evidence_bytes("adapter.log").decode("utf-8").splitlines()
+        return [tuple(line.split(" ", 1)) for line in lines]
+
     def every_evidence_file(self):
         """Return the bytes of every file under logs/, joined."""
         contents = []
@@ -531,10 +535,8 @@ class TheEvidenceFolder(AdapterTestCase):
 
     def test_adapter_log_lines_carry_a_utc_timestamp_and_name_each_phase_in_order(self):
         self.run_adapter("unparseable,good")
-        lines = self.evidence_bytes("adapter.log").decode("utf-8").splitlines()
         messages = []
-        for line in lines:
-            timestamp, message = line.split(" ", 1)
+        for timestamp, message in self.adapter_log_entries():
             datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
             messages.append(message)
         phases = [
@@ -648,6 +650,39 @@ class TheReviewSessionIsNeverOfferedTheWakeupTool(AdapterTestCase):
         flag_at = review_argv.index("--disallowedTools")
         self.assertEqual(review_argv[flag_at + 1], "ScheduleWakeup")
         self.assertNotIn("--disallowedTools", repair_call["argv"])
+
+
+class TheReviewSessionSearchesTheWebOnlyWhenAsked(AdapterTestCase):
+    def disallowed_tool_names(self):
+        review_argv = self.stub_calls()[0]["argv"]
+        names = []
+        for argument in review_argv[review_argv.index("--disallowedTools") + 1:]:
+            if argument.startswith("--"):
+                break
+            names.append(argument)
+        return names
+
+    def test_a_default_run_disallows_web_search_in_the_review_launch(self):
+        self.run_adapter("good")
+        self.assertIn("WebSearch", self.disallowed_tool_names())
+
+    def test_rb_search_1_allows_web_search_and_still_disallows_schedule_wakeup_in_the_review_launch(self):
+        self.run_adapter("good", RB_SEARCH="1")
+        names = self.disallowed_tool_names()
+        self.assertIn("ScheduleWakeup", names)
+        self.assertNotIn("WebSearch", names)
+
+    def test_a_default_run_logs_search_off_and_never_search_on(self):
+        self.run_adapter("good")
+        messages = [message for _, message in self.adapter_log_entries()]
+        self.assertIn("search off", messages)
+        self.assertNotIn("search on", messages)
+
+    def test_rb_search_1_logs_search_on_and_never_search_off(self):
+        self.run_adapter("good", RB_SEARCH="1")
+        messages = [message for _, message in self.adapter_log_entries()]
+        self.assertIn("search on", messages)
+        self.assertNotIn("search off", messages)
 
 
 class AGraceEndAlwaysTriesTheInterruptBeforeTheKill(AdapterTestCase):
