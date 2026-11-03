@@ -113,8 +113,13 @@ whatever parent path you give them and, for `lld`, the code the component
 touches. The skills write only the document under `.ponderly/`, and the
 agent writes nothing.
 
-The `SessionStart` and `SubagentStart` hooks read only the files under the
-plugin's `rules/` folder.
+The hooks read only the files under the plugin's `rules/` folder, the input
+Claude Code gives them and the record they write. `remind-rules.sh` writes
+that record, one file of the rules each agent has been sent, as
+`state/<session_id>` under the plugin's folder
+(`${CLAUDE_PLUGIN_ROOT}/state/`). It empties that file on a
+compaction and when the session ends, and on every session start and end it
+runs `find` to delete each empty or day-old record file under `state/`.
 
 No skill, agent or hook reads a credential or runs a package launcher, and
 none sends anything anywhere else but the web search queries of the

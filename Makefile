@@ -120,6 +120,7 @@ eval-agent-review-arm: CASE_ARGS += --allow-tools Bash --scaffold
 eval-agent-review-arm: export PATH := bin:$(PATH)
 eval-agent-review-arm-search: CASE_ARGS += --allow-tools Bash WebSearch --scaffold
 eval-agent-review-arm-search: export PATH := bin:$(PATH)
+eval-hook: CASE_ARGS += --scaffold
 
 # Runs all evals and needs all flags
 eval: CASE_ARGS += --scaffold

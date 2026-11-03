@@ -7,7 +7,7 @@ list-price estimates, usually ten to thirty cents a case.
 
 ```text
 evals/
-  hook/<case>/                  # the SessionStart and SubagentStart hooks that load the rules
+  hook/<case>/                  # the hooks that load the rules and remind Claude of them
   rules/<rule>/<case>/          # one folder per plugins/ponderly/rules/<rule>.md
   skills/<skill>/<case>/        # one folder per plugins/ponderly/skills/<skill>/
   agents/<agent>/<case>/        # one folder per plugins/ponderly/agents/<agent>.md

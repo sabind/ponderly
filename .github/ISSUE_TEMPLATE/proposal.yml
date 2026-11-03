@@ -55,8 +55,11 @@ body:
         - comments (rule)
         - workflow (rule)
         - tests (rule)
+        - PostToolUse hook
+        - SessionEnd hook
         - SessionStart hook
         - SubagentStart hook
+        - UserPromptSubmit hook
         - Something else
     validations:
       required: false

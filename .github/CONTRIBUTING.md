@@ -65,6 +65,8 @@ To add one, write a `test_*.py` under `checks/` in plain `unittest`: standard
 library only, Python 3.9 syntax, no model call, and paths resolved from the
 file's own location so it passes from any directory. Discovery picks it up with
 no Makefile change, and CI runs it through `make validate`.
+`checks/reminder_harness.py` is not a test file but a helper module the
+reminder hook tests share.
 
 ### Evals
 
@@ -78,7 +80,7 @@ test, so you can run only the ones for what you changed:
 
 ```text
 evals/
-  hook/<case>/              # the SessionStart and SubagentStart hooks that load the rules
+  hook/<case>/              # the hooks that load the rules and remind Claude of them
   rules/<rule>/<case>/      # one folder per plugins/ponderly/rules/<rule>.md
   skills/<skill>/<case>/    # one folder per plugins/ponderly/skills/<skill>/
   agents/<agent>/<case>/    # one folder per plugins/ponderly/agents/<agent>.md
@@ -250,8 +252,8 @@ far:
    Claude-only tool only where no command does the job.
 3. The Claude-only pieces are listed so a `compatibility` issue can start from
    the list: `$ARGUMENTS`, `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_SKILL_DIR}` and
-   the `arguments:` frontmatter list in skills, the hooks that load the rules,
-   and the agents' frontmatter.
+   the `arguments:` frontmatter list in skills, the hooks that load and remind
+   the rules, and the agents' frontmatter.
 
 The list grows from issues labelled `compatibility`.
 

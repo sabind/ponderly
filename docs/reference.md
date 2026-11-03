@@ -34,6 +34,8 @@ its name. The plugin's files live under `plugins/ponderly/`.
 - [Hooks](#hooks)
   - [load-rules.sh](#load-rulessh)
   - [load-rules-subagent.sh](#load-rules-subagentsh)
+  - [remind-rules.sh](#remind-rulessh)
+  - [remind-message.sh](#remind-messagesh)
 - [Tune the plugin for a repository](#tune-the-plugin-for-a-repository)
 - [What the plugin runs and sends](#what-the-plugin-runs-and-sends)
 
@@ -765,15 +767,16 @@ write to you.
 ## Hooks
 
 Claude Code does not load a `CLAUDE.md` or a `rules/` folder from a plugin by
-itself. So `plugins/ponderly/hooks/hooks.json` registers two hooks, one
-per script below.
+itself. So `plugins/ponderly/hooks/hooks.json` registers four scripts, each
+described below. The first two load the rules when a session or a sub-agent
+starts; the other two remind Claude of them as it works.
 
 Keep the combined rules under 10,000 characters; past that, Claude Code
 replaces a hook's output with a file path and a 2,000-character preview, so
 the rules after it would not be seen. `make validate` fails when they go over,
 or when a rule goes over its own limit: 1,600 characters for `collaboration`,
 1,900 for `communication`, 1,000 for `tests`, 2,450 for `code-changes` and
-1,450 for `comments`.
+1,450 for `comments`. The same cap holds for each reminder below.
 
 ### load-rules.sh
 
@@ -789,6 +792,46 @@ or when a rule goes over its own limit: 1,600 characters for `collaboration`,
 - **What it loads:** the same header and rules as `load-rules.sh`, wrapped in
   the JSON that this event needs. This is how the agents get the rules. It
   exits with an error, naming the problem, when the plugin has no rule files.
+
+### remind-rules.sh
+
+- **Event:** `PostToolUse`, after each `Read` and `Write` (matcher
+  `Read|Write`); every `SessionStart`, beside `load-rules.sh`; and
+  `SessionEnd`.
+- **What it loads:** after a `Read` or a `Write`, the full text of the rules
+  the file's kind brings, attached to that tool result. It sorts the file by
+  its path, in this order:
+  - a file outside the working directory brings nothing;
+  - a file under `.ponderly/specs/` brings `communication` and `workflow`;
+  - prose, data, lock and image files bring nothing: `.md`, `.mdx`, `.rst`,
+    `.txt`, `.adoc`, `.csv`, `.tsv`, `.lock`, `.png`, `.jpg`, `.jpeg`,
+    `.gif`, `.svg`, `.ico`, `.webp` and `.pdf` files, and
+    `package-lock.json`, `pnpm-lock.yaml` and `go.sum`, the extensions
+    matched in any case, so `NOTES.MD` brings nothing too;
+  - a test file brings `tests`: one in a `test`, `tests`, `__tests__` or
+    `spec` folder, the folder names matched in any case, so
+    `Tests/Helpers/Stub.swift` is a test file, or one whose name starts with
+    `test_`, holds `_test.`, `.test.` or `.spec.`, or ends in `Test` or
+    `Tests` before its last extension;
+  - every other file is code and brings `code-changes` and `comments`.
+
+  Each rule is attached once per agent, the main conversation and each
+  sub-agent apart, and again after a compaction. Reads or Writes Claude runs
+  in parallel may each attach the same rule once. It keeps what it sent in a
+  record under the plugin's `state/` folder, which a `compact` start and
+  `SessionEnd` empty. On `SessionStart` and `SessionEnd` it prints nothing.
+  It always exits 0 and never blocks the tool call.
+
+### remind-message.sh
+
+- **Event:** `UserPromptSubmit`, on every message you send.
+- **What it loads:** a short pointer attached to your message. It reads no
+  file, always exits 0 and never blocks the message. The pointer reads:
+
+  > Ponderly reminder: the rules "Writing to the author" and "Working with the
+  > author", loaded at session start, are already in your context and apply to
+  > your reply. The one most often missed: "Lay out a problem, an explanation
+  > or a decision as the person it changes will live it."
 
 ## Tune the plugin for a repository
 
@@ -866,8 +909,13 @@ whatever parent path you give them and, for `lld`, the code the component
 touches. The skills write only the document under `.ponderly/`, and the
 agent writes nothing.
 
-The `SessionStart` and `SubagentStart` hooks read only the files under the
-plugin's `rules/` folder.
+The hooks read only the files under the plugin's `rules/` folder, the input
+Claude Code gives them and the record they write. `remind-rules.sh` writes
+that record, one file of the rules each agent has been sent, as
+`state/<session_id>` under the plugin's folder
+(`${CLAUDE_PLUGIN_ROOT}/state/`). It empties that file on a
+compaction and when the session ends, and on every session start and end it
+runs `find` to delete each empty or day-old record file under `state/`.
 
 No skill, agent or hook reads a credential or runs a package launcher, and
 none sends anything anywhere else but the web search queries of the
