@@ -1,0 +1,29 @@
+---
+description: 'Launched by its namespaced name with the testing lens on the calc fixture''s branch calc-subtract, whose base commits a divide that raises ZeroDivisionError("cannot divide by zero") and a test that checks that message exactly, and whose uncommitted change adds subtract to calc/ops.py on lines 9 and 10 with no test and rewords divide''s message on line 15 to "divide: the divisor b is zero", editing the existing test_divide_by_zero_raises_its_message in tests/test_ops.py to check the new message exactly, review-arm returns its arm block for the testing lens with a finding at subtract in calc/ops.py that names a test for it, and no finding at divide. Requirement 5.3. Needs the Makefile''s review-arm target, which grants Bash, runs the scaffold and puts the wrappers in bin on the PATH.'
+tags: [agent, review-arm]
+max_turns: 20
+allowed_tools: [Read, Glob, Grep, Agent]
+expected_outcome: 'Claude launches one sub-agent with subagent_type ponderly:review-arm, giving it the shared standard, the testing lens, the range and the two changed files, and does nothing else itself. The sub-agent runs git diff main for calc/ops.py and tests/test_ops.py, lists the behaviours the change introduces or alters, the new subtract and divide''s reworded ZeroDivisionError message, and finds the test that would fail if each broke: test_divide_by_zero_raises_its_message checks the new message exactly, and nothing calls subtract. It returns an arm block beginning lens: testing with one testing finding on calc/ops.py at subtract, lines 9 to 10, whose message names the test that would cover it, such as a test_subtract in tests/test_ops.py written as the unittest OpsTest methods are, and no finding at divide. Claude''s reply is that arm block verbatim.'
+---
+Launch one sub-agent with the Agent tool, `subagent_type` `ponderly:review-arm`, and give it exactly this prompt:
+
+```text
+Shared standard, quoted:
+"Across every lens, a finding worth reporting is one a competent senior reviewer would expect the author to address before merge: true and verifiable against the code at head, a real concern that would improve the change, and specific enough to act on. A finding not worth reporting is an incorrect or unverifiable claim, a duplicate, a style nit below the project's bar, or advice that would not improve the change or would make it worse. A pre-existing problem in a touched file counts when it is verifiable. A file the pull request moved or renamed is touched in every line, so a problem on any of its lines is a finding at that line. A finding sits where a change is needed. When a defect, code or text that does the wrong thing at head and that an edit there would fix, needs its own edit at several places, because each is wrong on its own, such as a stub and the interface it lacks or one mistake copied into several places, write one finding at each place you verified at head, in whatever file it is, touched or not, and one at each copy in the same file. When an edit at either of two places alone would fix the defect, such as a new call into a handler whose guard does not serve that call, or code and a document, configuration or manifest that now disagree, write one finding at the place the pull request changed, or one at each when it changed both, and when it changed neither side's lines, as when it only removed code, on the lines next to the removal. Each such finding names the file and line of the others, or of the other place when there is one finding, and never describes another place's defect as a sentence in place of a finding of its own; a place you suspect but have not verified at head is no finding and goes under unsure. A judgement about the change as a whole, such as that it reformats or reorders files beyond its purpose, mixes two purposes or is too large, names no line an edit would fix: it is not a finding and goes under unsure in one entry beginning `change remark:` that says what it is about, however many files it concerns. A message describes one defect and no aside restating a claim you did not verify: a second defect, even on the same lines, is a finding of its own."
+
+Lens, quoted:
+"## testing
+
+This lens looks at the tests the change adds or should have added: behaviour the change introduces or alters with no test that would fail if it broke, missing boundary and error cases for new code paths, tests that assert the wrong thing or nothing, tests that restate an implementation constant or check their own input, fakes that do not enforce the real contract, flaky tests that depend on time, order or the network, and validation logic in the tests themselves. Before reading the tests, the arm lists each behaviour the change introduces or alters, finds the test that would fail if that behaviour broke, and reports each behaviour with none at the behaviour's own place in the code, though the edit it needs goes in a test. It carries the category `testing`. A true positive names the behaviour, the place it lives and the test that would cover it, or the test that is wrong and how, in the project's own test framework and style. A false positive asks for coverage of code that an existing test already covers, demands tests for trivial code the project does not test, or proposes a test that would not catch a real regression. A defect in the production code itself belongs to the lens that covers that kind of defect; this lens reports that the tests miss it."
+
+Range: base main, head the working tree.
+
+Changed files:
+- calc/ops.py
+- tests/test_ops.py
+
+Pull request title: Add subtract and name the divisor in divide's error
+Pull request body: none given
+```
+
+Do nothing else yourself: do not read, run or check anything, do not answer anything the sub-agent asks, and do not launch it again; I cannot answer questions during this run. When the sub-agent returns, reply with its arm block verbatim, the whole of it and nothing else.

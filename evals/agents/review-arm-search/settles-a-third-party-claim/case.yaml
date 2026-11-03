@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: settles-a-third-party-claim
+context:
+  scaffold_script: scaffold.sh

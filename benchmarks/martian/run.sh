@@ -11,10 +11,10 @@
 # logs/run.log and each pull request's evidence in logs/<key>/; repository
 # caches go to work/. ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN,
 # RB_CONFIG_MODEL, RB_CONFIG_EFFORT, RB_CONFIG_BUDGET_USD, RB_KEEP_TRANSCRIPTS,
-# RB_FINAL_GRACE_SECONDS and RB_INTERRUPT_WAIT_SECONDS are passed through to
-# the container by name. A pull request whose base or head cannot be fetched,
-# or whose container fails, is logged and skipped; the script exits 1 only
-# when no findings file was written.
+# RB_FINAL_GRACE_SECONDS, RB_INTERRUPT_WAIT_SECONDS and RB_SEARCH are passed
+# through to the container by name. A pull request whose base or head cannot
+# be fetched, or whose container fails, is logged and skipped; the script
+# exits 1 only when no findings file was written.
 #
 # Needs docker, git and jq.
 set -euo pipefail
@@ -44,7 +44,8 @@ jq -n \
   --arg plugin_version "$(jq -r .version "$plugin_json")" \
   --arg started "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --arg command "$command" \
-  '{model: $model, effort: $effort, budget_usd: ($budget_usd | tonumber? // $budget_usd), image: $image,
+  --argjson search "$([ "${RB_SEARCH:-}" = 1 ] && echo true || echo false)" \
+  '{model: $model, effort: $effort, budget_usd: ($budget_usd | tonumber? // $budget_usd), search: $search, image: $image,
     plugin_version: $plugin_version, started: $started, commands: [$command],
     judge_model: null, judge_base_url: null}' > "$run_dir/run.json"
 
@@ -96,7 +97,7 @@ for i in $indices; do
     -e RB_DIFF=/work/pr/diff.patch -e RB_PR_JSON=/work/pr/pr.json -e RB_OUT=/work/out/findings.json \
     -e RB_ATTEMPT=1 \
     -e ANTHROPIC_API_KEY -e CLAUDE_CODE_OAUTH_TOKEN -e RB_CONFIG_MODEL -e RB_CONFIG_EFFORT -e RB_CONFIG_BUDGET_USD \
-    -e RB_KEEP_TRANSCRIPTS -e RB_FINAL_GRACE_SECONDS -e RB_INTERRUPT_WAIT_SECONDS \
+    -e RB_KEEP_TRANSCRIPTS -e RB_FINAL_GRACE_SECONDS -e RB_INTERRUPT_WAIT_SECONDS -e RB_SEARCH \
     "$image" || status=$?
 
   if [ -d "$out/logs" ]; then

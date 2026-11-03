@@ -15,7 +15,7 @@ locals `s`, `n` and `m`, a dense one-line ternary and a docstring that walks
 through the algorithm in numbered steps, and `tests/test_stats.py`, which
 passes. Main holds only the fixture, so the branch's one source file is
 `calc/stats.py`. Tests run with `python3 -m unittest`. The Makefile's
-readable-code target grants Bash, Write, Edit and Agent and puts `bin` on the
+readable-code target grants Bash, Write and Edit and puts `bin` on the
 PATH; the case lists Agent and Skill for the executor, reviewer and report
 launches.
 

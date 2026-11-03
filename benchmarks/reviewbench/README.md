@@ -68,10 +68,11 @@ first, and print the run folder under `runs/` to pass as `RUN`. `prs` runs
 every listed pull request even when one fails, and fails at the end if any
 did. `collect` prints its new run folder, `runs/<timestamp>-collected/`, to
 pass to `judge` and `report`. It stops when two folders hold findings for the
-same pull request, or when their model, effort, budget, image or plugin
-version differ, since those findings would not be one run. Each target that works
-on a run folder appends its command to the folder's `run.json`, so the report
-names the commands that made it.
+same pull request, or when their model, effort, budget, image, plugin version
+or whether search was on differ, a folder whose `run.json` records no `search`
+counting as off, since those findings would not be one run. Each target that
+works on a run folder appends its command to the folder's `run.json`, so the
+report names the commands that made it.
 
 ## What a run folder holds
 
@@ -105,6 +106,16 @@ session's spend from the last budget line of its transcript and says so in
 cost can be a few cents short. This needs the transcript, so with
 `RB_KEEP_TRANSCRIPTS=0` a session that printed no result records no cost.
 
+The review arms cannot use Claude Code's `WebSearch` tool unless `RB_SEARCH`
+is `1`: the session runs with permission prompts bypassed, so the adapter
+disallows `WebSearch` alongside `ScheduleWakeup` and logs `search off` in
+`adapter.log`, and a claim that needed a search stays unverified. With
+`RB_SEARCH=1` the arms can search to settle what a tool outside the repository
+does, the adapter logs `search on`, and they still have no fetch tool. The
+search runs through the model API host the manifest already declares,
+`https://api.anthropic.com`, so `ponderly.json` declares no other host for
+it.
+
 `report.md` has a header naming the run and its commands, then the sections
 Overall, By severity, By category, Duration and cost, and Review health. Review
 health counts, from the `review.json` files, the readable and unreadable review
@@ -113,8 +124,9 @@ returned findings or gave no verdict, how often a second pass relaunched
 arms and which lenses it relaunched, which lenses lost an arm, the mean and
 largest number of candidates, the mean number of findings removed by the merge
 and by the wave review, and the totals of wave reviewer findings folded and not
-anchored and of team-rule departures not reported. Older review files lack
-those last counts; each such line says how many review files record it, or that
+anchored, of team-rule departures not reported and of touched files no arm
+read, the review file's `files_unread`. Older review files lack those last
+counts; each such line says how many review files record it, or that
 none do.
 
 ## Variables
@@ -136,12 +148,14 @@ Set any of these on the `make` command line or in your environment.
 - `TRY_AGENT_WORK`: where ReviewBench's runner keeps its repository caches,
   `.reviewbench/.try-agent` by default.
 
-These three reach the image and are recorded in `run.json`:
+These four reach the image and are recorded in `run.json`:
 
 - `RB_CONFIG_MODEL`: the Claude model the review runs on, `opus` by default.
 - `RB_CONFIG_EFFORT`: its effort level, `high` by default.
 - `RB_CONFIG_BUDGET_USD`: the cost cap of one pull request's session in
   dollars, `15` by default.
+- `RB_SEARCH`: whether the review arms can use `WebSearch`, recorded as
+  `search`, `0` by default, which disallows it; `1` lets the arms search.
 
 These three reach the image too, and are not recorded in `run.json`:
 
