@@ -4,6 +4,8 @@ import re
 import unittest
 from pathlib import Path
 
+from frontmatter import read_frontmatter
+
 ROOT = Path(__file__).resolve().parent.parent
 PLUGIN = ROOT / "plugins" / "ponderly"
 AGENTS_DIR = PLUGIN / "agents"
@@ -30,21 +32,6 @@ MODEL_ALIASES = {"sonnet", "opus", "haiku", "fable", "inherit"}
 EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 
 HANDBOOK_REFERENCE = re.compile(r"ponderly:([a-z0-9]+(?:-[a-z0-9]+)*)")
-
-
-def read_frontmatter(path):
-    """Return the flat ``key: value`` pairs between the leading ``---`` fences, or None if there is no block."""
-    lines = path.read_text(encoding="utf-8").splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    fields = {}
-    for line in lines[1:]:
-        if line.strip() == "---":
-            return fields
-        key, separator, value = line.partition(":")
-        if separator:
-            fields[key.strip()] = value.strip()
-    return None
 
 
 class AgentFrontmatterTest(unittest.TestCase):

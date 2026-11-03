@@ -5,8 +5,11 @@ gives no warning on the way there. Agent descriptions have no documented limit
 but load into every session's context, so they are held to the same ceiling.
 """
 
+import tempfile
 import unittest
 from pathlib import Path
+
+from frontmatter import read_frontmatter
 
 ROOT = Path(__file__).resolve().parent.parent
 PLUGIN = ROOT / "plugins" / "ponderly"
@@ -14,21 +17,6 @@ AGENTS_DIR = PLUGIN / "agents"
 SKILLS_DIR = PLUGIN / "skills"
 
 DESCRIPTION_LIMIT = 1024
-
-
-def read_frontmatter(path):
-    """Return the flat ``key: value`` pairs between the leading ``---`` fences, or None if there is no block."""
-    lines = path.read_text(encoding="utf-8").splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    fields = {}
-    for line in lines[1:]:
-        if line.strip() == "---":
-            return fields
-        key, separator, value = line.partition(":")
-        if separator:
-            fields[key.strip()] = value.strip()
-    return None
 
 
 class DescriptionLengthTest(unittest.TestCase):
@@ -46,6 +34,34 @@ class DescriptionLengthTest(unittest.TestCase):
                     DESCRIPTION_LIMIT,
                     "description has {} characters; the limit is {}".format(len(description), DESCRIPTION_LIMIT),
                 )
+
+
+class ReadFrontmatterTest(unittest.TestCase):
+    """``read_frontmatter`` reads each value the way YAML does, so a long description cannot hide on later lines."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "SKILL.md"
+
+    def description_of(self, frontmatter):
+        self.path.write_text("---\n" + frontmatter + "---\nBody.\n", encoding="utf-8")
+        return read_frontmatter(self.path)["description"]
+
+    def test_a_folded_block_joins_its_lines_with_spaces(self):
+        self.assertEqual(self.description_of("description: >\n  Reads the ticket\n  and fixes it.\nname: bugfix\n"), "Reads the ticket and fixes it.\n")
+
+    def test_a_literal_block_keeps_its_line_breaks(self):
+        self.assertEqual(self.description_of("description: |\n  Reads the ticket\n  and fixes it.\n"), "Reads the ticket\nand fixes it.\n")
+
+    def test_a_strip_marker_drops_the_final_line_break(self):
+        self.assertEqual(self.description_of("description: >-\n  Reads the ticket.\n"), "Reads the ticket.")
+
+    def test_a_quoted_value_across_lines_is_read_whole_without_its_quotes(self):
+        self.assertEqual(self.description_of('description: "Reads the ticket\n  and fixes it."\n'), "Reads the ticket and fixes it.")
+
+    def test_a_plain_value_across_lines_is_read_whole(self):
+        self.assertEqual(self.description_of("description: Reads the ticket\n  and fixes it: carefully.\n"), "Reads the ticket and fixes it: carefully.")
 
 
 if __name__ == "__main__":
