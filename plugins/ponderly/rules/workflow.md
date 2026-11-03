@@ -1,6 +1,6 @@
 # Workflow
 
-These rules say how a request finds the handbook skill that does it. They apply in every repository this handbook applies to. A skill's description says when it applies and its text says what it does; these rules say to look there first, and what not to do without the skill.
+How a request finds the handbook skill that does it, in every repository this handbook applies to.
 
 - **Check the skills before doing it yourself.** The handbook ships a skill for each common kind of work, and every skill's description says when it applies. Match the request against those descriptions first, and run the skill that fits rather than doing its work by hand: no pull request with a bare `gh pr create`, no code before the bugfix skill has reproduced the bug, no spec task skipped or merged, and no judging a change's size yourself, which is start-task's job.
 - **Small changes stay small.** The one exception: a typo, a one-line fix or a rename needs no skill. Say that the change is small enough to skip `start-task`, then make it.

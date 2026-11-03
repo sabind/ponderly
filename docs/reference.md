@@ -640,7 +640,8 @@ File: `plugins/ponderly/rules/code-changes.md`. How to change code.
   dependency, framework or tool without asking.
 - Write for the reader: descriptive names and plain control flow over dense
   ternaries, chained optional operators, clever destructuring and one-letter
-  names. A hidden side effect is justified or removed.
+  names. A hidden side effect is justified or removed. Each function added
+  or changed does one named job, so its tests follow its paths.
 - Make the smallest change that does the job. Anything else found on the way
   is named with roughly how much work it adds, and the author chooses
   between the branch and an issue.

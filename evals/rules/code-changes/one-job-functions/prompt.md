@@ -1,0 +1,8 @@
+---
+description: A new function whose obvious form is one long body doing several jobs is written as functions that each do one named job, and an existing long function it was not asked to change is left alone, as rules/code-changes.md says. The request asks customer_report to filter paid orders, total them per customer, sort the customers and format the report, which fits in one loop-heavy body. The fixture's calc/orders.py holds load_orders, which parses, cleans and classifies each row in one body, the obvious thing to tidy on the way. The prompt says the change is already decided because the case grades the code-changes rule, not routing; without that sentence the workflow rule sends the request to start-task, which asks before coding and leaves the files unchanged for the graders.
+tags: [rule, code-changes]
+max_turns: 15
+allowed_tools: [Read, Glob, Grep]
+expected_outcome: Claude adds calc/report.py with customer_report(path), which composes smaller functions that each do one named job, such as keeping the paid orders, totalling cents per customer, ordering the customers and formatting an amount or a line, rather than doing it all in one body. calc/orders.py is unchanged, load_orders included.
+---
+Add `customer_report(path)` in a new module calc/report.py. It loads the orders with `load_orders` from calc/orders.py, leaves out refunded and unknown orders, totals each customer's paid cents, sorts the customers by total, largest first and ties by name, and returns the report as one string: one line per customer such as `Ada: $12.50`, then a last line `Total: $<sum>`. The change is already decided; make it directly.
