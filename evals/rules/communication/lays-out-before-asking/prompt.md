@@ -3,6 +3,6 @@ description: Asked to pick a retry ceiling together, on a job-queue project whos
 tags: [rule, communication]
 max_turns: 8
 allowed_tools: [Read, Glob, Grep]
-expected_outcome: Claude reads the README, lays out the three ceilings, 3, 5 and 10, as what the uploader lives with under each, a dropped file to send again or a longer wait in the queue, recommends one with its reason, and then puts the options 3, 5 and 10 on separate lines, as the collaboration rule says to do where the question tool is absent. It sets nothing.
+expected_outcome: Claude reads the README, lays out the three ceilings, 3, 5 and 10, as what the uploader lives with under each, a dropped file to send again and the wait in the queue behind a failing job, recommends one with its reason, and then puts the options 3, 5 and 10 on separate lines, as the collaboration rule says to do where the question tool is absent. It sets nothing.
 ---
 Pick the retry ceiling with me
