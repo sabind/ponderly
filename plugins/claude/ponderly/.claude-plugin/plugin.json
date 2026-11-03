@@ -11,6 +11,10 @@
   "homepage": "https://github.com/sabind/ponderly",
   "repository": "https://github.com/sabind/ponderly",
   "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/sabind/ponderly/blob/main/PRIVACY.md",
+  "supportUrl": "https://github.com/sabind/ponderly/issues",
+  "termsOfServiceUrl": "https://github.com/sabind/ponderly/blob/main/LICENSE",
+  "documentationUrl": "https://github.com/sabind/ponderly/blob/main/docs/reference.md",
   "icon": "./.claude-plugin/icon.png",
   "keywords": [
     "developer-workflow",
