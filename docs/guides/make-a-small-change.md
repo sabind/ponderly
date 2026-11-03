@@ -23,7 +23,7 @@ anything. The images are from that session, run on plugin 0.15.0 on
   claude plugin install ponderly@sabind
   ```
 
-  The [plugin README](../../plugins/ponderly/README.md#install) has the
+  The [plugin README](../../plugins/claude/ponderly/README.md#install) has the
   rest of the install steps.
 - A git repository to work in.
 - The `gh` CLI, signed in, only if you go on to open a pull request with

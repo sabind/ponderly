@@ -21,7 +21,7 @@ session, run on plugin 1.1.0 on 2026-10-28.
   claude plugin install ponderly@sabind
   ```
 
-  The [plugin README](../../plugins/ponderly/README.md#install) has the
+  The [plugin README](../../plugins/claude/ponderly/README.md#install) has the
   rest of the install steps.
 - A git repository to work in. The template goes in a `.ponderly/` folder at
   its root.
@@ -34,13 +34,13 @@ from the repository's root:
 
 | Skill | What the template shapes | Your file | The plugin's file, to start from |
 | --- | --- | --- | --- |
-| `report` | a hand-back | `.ponderly/report/handback.md` | [handback.md](../../plugins/ponderly/skills/report/templates/handback.md) |
-| `report` | a decision | `.ponderly/report/decision.md` | [decision.md](../../plugins/ponderly/skills/report/templates/decision.md) |
-| `report` | a status report | `.ponderly/report/status.md` | [status.md](../../plugins/ponderly/skills/report/templates/status.md) |
-| `report` | an answer | `.ponderly/report/answer.md` | [answer.md](../../plugins/ponderly/skills/report/templates/answer.md) |
-| `strategy` | a tech strategy | `.ponderly/strategy/template.md` | [template.md](../../plugins/ponderly/skills/strategy/template.md) |
-| `hld` | a high level design | `.ponderly/hld/template.md` | [template.md](../../plugins/ponderly/skills/hld/template.md) |
-| `lld` | a low level design | `.ponderly/lld/template.md` | [template.md](../../plugins/ponderly/skills/lld/template.md) |
+| `report` | a hand-back | `.ponderly/report/handback.md` | [handback.md](../../plugins/claude/ponderly/skills/report/templates/handback.md) |
+| `report` | a decision | `.ponderly/report/decision.md` | [decision.md](../../plugins/claude/ponderly/skills/report/templates/decision.md) |
+| `report` | a status report | `.ponderly/report/status.md` | [status.md](../../plugins/claude/ponderly/skills/report/templates/status.md) |
+| `report` | an answer | `.ponderly/report/answer.md` | [answer.md](../../plugins/claude/ponderly/skills/report/templates/answer.md) |
+| `strategy` | a tech strategy | `.ponderly/strategy/template.md` | [template.md](../../plugins/claude/ponderly/skills/strategy/template.md) |
+| `hld` | a high level design | `.ponderly/hld/template.md` | [template.md](../../plugins/claude/ponderly/skills/hld/template.md) |
+| `lld` | a low level design | `.ponderly/lld/template.md` | [template.md](../../plugins/claude/ponderly/skills/lld/template.md) |
 
 Your file replaces the plugin's file whole; nothing is merged. So a section
 you leave out is gone. The plugin's status template, for example, opens with

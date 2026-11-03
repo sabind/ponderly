@@ -13,7 +13,7 @@ import shutil
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN = os.path.join(ROOT, "plugins", "ponderly")
+PLUGIN = os.path.join(ROOT, "plugins", "claude", "ponderly")
 HOOKS = ("remind-rules.sh", "remind-message.sh")
 
 HookRun = collections.namedtuple("HookRun", "code context record")

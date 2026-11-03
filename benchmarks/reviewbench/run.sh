@@ -20,7 +20,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
 clone="$here/.reviewbench"
-plugin_manifest="$root/plugins/ponderly/.claude-plugin/plugin.json"
+plugin_manifest="$root/plugins/claude/ponderly/.claude-plugin/plugin.json"
 reviewbench_url="https://github.com/review-bench/ReviewBench"
 try_agent_work="${TRY_AGENT_WORK:-$clone/.try-agent}"
 

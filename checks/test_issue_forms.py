@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN = ROOT / "plugins" / "ponderly"
+PLUGIN = ROOT / "plugins" / "claude" / "ponderly"
 FORMS_DIR = ROOT / ".github" / "ISSUE_TEMPLATE"
 CATCH_ALL = "Something else"
 

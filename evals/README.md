@@ -8,9 +8,9 @@ list-price estimates, usually ten to thirty cents a case.
 ```text
 evals/
   hook/<case>/                  # the hooks that load the rules and remind Claude of them
-  rules/<rule>/<case>/          # one folder per plugins/ponderly/rules/<rule>.md
-  skills/<skill>/<case>/        # one folder per plugins/ponderly/skills/<skill>/
-  agents/<agent>/<case>/        # one folder per plugins/ponderly/agents/<agent>.md
+  rules/<rule>/<case>/          # one folder per plugins/claude/ponderly/rules/<rule>.md
+  skills/<skill>/<case>/        # one folder per plugins/claude/ponderly/skills/<skill>/
+  agents/<agent>/<case>/        # one folder per plugins/claude/ponderly/agents/<agent>.md
   fixtures/<tree>/              # a project the scaffolds build, copied in by fixtures/setup.sh
   results/                      # one folder per run, gitignored
 ```
@@ -26,9 +26,9 @@ make eval                        # the whole suite
 ```
 
 Every case carries its component's name as a tag. `evals/` sits outside the
-plugin folder (`plugins/ponderly/`); because `claude plugin eval` reads
+plugin folder (`plugins/claude/ponderly/`); because `claude plugin eval` reads
 cases only from inside the plugin, each target runs it against a temporary copy
-of `plugins/ponderly/` with `evals/` inside, with `--tag <name>` plus the
+of `plugins/claude/ponderly/` with `evals/` inside, with `--tag <name>` plus the
 flags its cases need, which live in the Makefile's "Per-target flags" block.
 Results come back to `evals/results/`, and the copy is deleted after the run,
 pass or fail. Anything extra goes through `EVAL_ARGS`, and the
@@ -42,7 +42,7 @@ make eval EVAL_MAX_COST_USD=5
 ```
 
 Run only the target of the component your change touched, never the whole
-suite, unless the change is to `plugins/ponderly/hooks/` or the Makefile.
+suite, unless the change is to `plugins/claude/ponderly/hooks/` or the Makefile.
 A single run is noisy, so iterate with `EVAL_ARGS="--runs 1"`, then confirm
 before trusting a change: pass `--runs 2` when every grader of the case is
 `regex`, `tool_used` or `file_exists`, and `--runs 3` when any grader is `llm`.

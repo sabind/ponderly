@@ -2,7 +2,7 @@
 
 This page holds the detail for every skill, agent, rule and hook in the
 `ponderly` plugin. Each component has a section of its own, headed with
-its name. The plugin's files live under `plugins/ponderly/`.
+its name. The plugin's files live under `plugins/claude/ponderly/`.
 
 ## Contents
 
@@ -43,7 +43,7 @@ its name. The plugin's files live under `plugins/ponderly/`.
 
 Every skill runs as `/ponderly:<skill>`. You can also just ask Claude
 for the job; each skill's description says when it applies, and Claude
-runs the one that fits. The skills live under `plugins/ponderly/skills/`.
+runs the one that fits. The skills live under `plugins/claude/ponderly/skills/`.
 
 When a skill asks you something with a short fixed list of answers, it
 uses a question with options plus free text. When the answer is your own
@@ -310,7 +310,7 @@ findings, each anchored to lines at the head.
   A missing `wave-reviewer` does not stop it; the merged findings are then
   the final ones.
 - **What it does:** it reads its lenses file,
-  `plugins/ponderly/skills/review/lenses.md`, whose `##` sections are the
+  `plugins/claude/ponderly/skills/review/lenses.md`, whose `##` sections are the
   lenses: correctness, reliability, security, maintainability, documentation
   and testing. A file the change moved or renamed is touched in every line,
   and the list of changed files the skill sends the arms marks it with its old
@@ -467,7 +467,7 @@ ask what is going on or why.
 
 ## Agents
 
-The agents live under `plugins/ponderly/agents/`. `implement-spec`,
+The agents live under `plugins/claude/ponderly/agents/`. `implement-spec`,
 `readable-code` and `tighten-tests` launch the executor and the wave
 reviewer. `start-task` launches the executor for one contained change.
 The `strategy`, `hld` and `lld` skills launch the document reviewer on
@@ -631,14 +631,14 @@ Every agent follows one protocol for its report, and a new agent must too:
 
 The plugin loads a short set of team rules into every Claude Code session,
 in every repository, so Claude follows them without being asked. They live
-in `plugins/ponderly/rules/`. The [Hooks](#hooks) load them.
+in `plugins/claude/ponderly/rules/`. The [Hooks](#hooks) load them.
 
 A rule a repository needs to override belongs in that repository's own
 `CLAUDE.md`, which Claude reads alongside these.
 
 ### workflow
 
-File: `plugins/ponderly/rules/workflow.md`. How a request finds its
+File: `plugins/claude/ponderly/rules/workflow.md`. How a request finds its
 skill, and what holds in every session.
 
 - Check the skills before doing the work by hand. Match the request against
@@ -663,7 +663,7 @@ skill, and what holds in every session.
 
 ### code-changes
 
-File: `plugins/ponderly/rules/code-changes.md`. How to change code.
+File: `plugins/claude/ponderly/rules/code-changes.md`. How to change code.
 
 - Read before you write: the README and contributing guide, then the
   surrounding code, its patterns, tests and configuration.
@@ -687,7 +687,7 @@ File: `plugins/ponderly/rules/code-changes.md`. How to change code.
 
 ### comments
 
-File: `plugins/ponderly/rules/comments.md`. How to comment code.
+File: `plugins/claude/ponderly/rules/comments.md`. How to comment code.
 
 - Docstrings on public contracts only, in the project's documentation
   style, saying intent, parameters, returns and exceptions, never the
@@ -702,7 +702,7 @@ File: `plugins/ponderly/rules/comments.md`. How to comment code.
 
 ### tests
 
-File: `plugins/ponderly/rules/tests.md`. How tests are written.
+File: `plugins/claude/ponderly/rules/tests.md`. How tests are written.
 
 - One test per code path, corner case or gotcha.
 - One input per test: no loop, `subTest` or `parametrize`. Only a seeded
@@ -724,7 +724,7 @@ File: `plugins/ponderly/rules/tests.md`. How tests are written.
 
 ### collaboration
 
-File: `plugins/ponderly/rules/collaboration.md`. How skills and agents
+File: `plugins/claude/ponderly/rules/collaboration.md`. How skills and agents
 work with you.
 
 - Ask in the shape of the answer: a question with options plus free text for
@@ -743,7 +743,7 @@ work with you.
 
 ### communication
 
-File: `plugins/ponderly/rules/communication.md`. How skills and agents
+File: `plugins/claude/ponderly/rules/communication.md`. How skills and agents
 write to you.
 
 - Problems first: each failed check, check not run, unfixed finding, stopped
@@ -767,7 +767,7 @@ write to you.
 ## Hooks
 
 Claude Code does not load a `CLAUDE.md` or a `rules/` folder from a plugin by
-itself. So `plugins/ponderly/hooks/hooks.json` registers four scripts, each
+itself. So `plugins/claude/ponderly/hooks/hooks.json` registers four scripts, each
 described below. The first two load the rules when a session or a sub-agent
 starts; the other two remind Claude of them as it works.
 

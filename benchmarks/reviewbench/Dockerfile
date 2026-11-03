@@ -14,7 +14,7 @@ RUN git config --system --add safe.directory '*'
 RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     && npm cache clean --force
 
-COPY plugins/ponderly /opt/ponderly
+COPY plugins/claude/ponderly /opt/ponderly
 COPY benchmarks/reviewbench/agent /agent
 
 # No USER line: the entrypoint runs as root so it can write /work/out whatever the

@@ -12,7 +12,7 @@ from pathlib import Path
 from frontmatter import read_frontmatter
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN = ROOT / "plugins" / "ponderly"
+PLUGIN = ROOT / "plugins" / "claude" / "ponderly"
 AGENTS_DIR = PLUGIN / "agents"
 SKILLS_DIR = PLUGIN / "skills"
 

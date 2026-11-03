@@ -26,7 +26,7 @@ only="${2:-}"
 
 here="$(cd "$(dirname "$0")" && pwd)"
 prs="$here/prs.json"
-plugin_json="$here/../../plugins/ponderly/.claude-plugin/plugin.json"
+plugin_json="$here/../../plugins/claude/ponderly/.claude-plugin/plugin.json"
 [ -f "$prs" ] || { echo "$prs not found; run the prs target first" >&2; exit 1; }
 
 run_dir="$here/runs/$(date +%Y-%m-%dT%H-%M-%S)"

@@ -21,7 +21,7 @@ below is an excerpt of a recorded session.
   claude plugin install ponderly@sabind
   ```
 
-  The [plugin README](../../plugins/ponderly/README.md#install) has the
+  The [plugin README](../../plugins/claude/ponderly/README.md#install) has the
   rest of the install steps.
 - A git repository to work in.
 - The `gh` CLI, signed in, for the `pr` step.

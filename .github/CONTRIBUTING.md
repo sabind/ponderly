@@ -1,6 +1,6 @@
 # Contributing
 
-This repository holds a Claude Code plugin, in `plugins/ponderly/`: shared
+This repository holds a Claude Code plugin, in `plugins/claude/ponderly/`: shared
 skills, agents and rules for a software team, whose hooks put the rules in every
 session's context. This guide
 says how to set up, test and submit a change, and how the repository uses
@@ -15,7 +15,7 @@ the [Code of Conduct](CODE_OF_CONDUCT.md). Report a vulnerability as the
 Clone the repository and work from its root:
 
 ```bash
-claude --plugin-dir ./plugins/ponderly   # load your working copy for one session
+claude --plugin-dir ./plugins/claude/ponderly   # load your working copy for one session
 make validate                                # the unit tests and the validators; CI runs this on every PR
 ```
 
@@ -27,8 +27,8 @@ file the gaps it found as issues. Developing it needs make, python3 and Claude
 Code, and CI adds Node only to install Claude Code.
 
 The free checks are `make validate`: the unit tests under `checks/`, then
-three `claude plugin validate` runs, on `.`, `./plugins/ponderly` and
-`./plugins/ponderly/skills`. They make no model call. Run `make validate`
+three `claude plugin validate` runs, on `.`, `./plugins/claude/ponderly` and
+`./plugins/claude/ponderly/skills`. They make no model call. Run `make validate`
 after every change to a skill, rule, agent, the hooks, the manifest or
 `checks/`. The make and python3 it needs ship with git in the macOS Command
 Line Tools, and there is no venv, pip or requirements file.
@@ -41,8 +41,8 @@ change that touches no skill, agent, rule or hook needs no eval, and
 ### Validator
 
 `claude plugin validate . --strict` checks the marketplace at the repository
-root, `claude plugin validate ./plugins/ponderly --strict` checks the
-plugin, and `claude plugin validate ./plugins/ponderly/skills --strict`
+root, `claude plugin validate ./plugins/claude/ponderly --strict` checks the
+plugin, and `claude plugin validate ./plugins/claude/ponderly/skills --strict`
 checks the skills. They are built into Claude Code and make no model call. They
 check the manifests and skill frontmatter; for an agent file they check only
 that a frontmatter block with a description exists.
@@ -81,16 +81,16 @@ test, so you can run only the ones for what you changed:
 ```text
 evals/
   hook/<case>/              # the hooks that load the rules and remind Claude of them
-  rules/<rule>/<case>/      # one folder per plugins/ponderly/rules/<rule>.md
-  skills/<skill>/<case>/    # one folder per plugins/ponderly/skills/<skill>/
-  agents/<agent>/<case>/    # one folder per plugins/ponderly/agents/<agent>.md
+  rules/<rule>/<case>/      # one folder per plugins/claude/ponderly/rules/<rule>.md
+  skills/<skill>/<case>/    # one folder per plugins/claude/ponderly/skills/<skill>/
+  agents/<agent>/<case>/    # one folder per plugins/claude/ponderly/agents/<agent>.md
 ```
 
 `evals/` sits outside the plugin folder, so Anthropic's plugin directory, which
 scans every file in the plugin folder when the plugin is submitted, sees only
 the plugin. But `claude plugin eval` reads cases only from inside the plugin
 root, so every eval target builds a temporary tree: a copy of
-`plugins/ponderly/` with a copy of `evals/`, minus its results, inside it,
+`plugins/claude/ponderly/` with a copy of `evals/`, minus its results, inside it,
 and `git init` at its top. It runs `claude plugin eval` against that tree,
 writes the results to `evals/results/<timestamp>/` at the repository root, and
 deletes the tree afterwards whether the run passed or failed.
@@ -144,7 +144,7 @@ allows.
 
 The repository is laid out as:
 
-- `plugins/ponderly/`: the plugin itself, with its manifest, skills,
+- `plugins/claude/ponderly/`: the plugin itself, with its manifest, skills,
   agents, rules, hooks and its README.
 - `evals/`: the eval cases, kept outside the plugin folder for the reason
   [Evals](#evals) gives.
@@ -155,8 +155,8 @@ The repository is laid out as:
 - `.claude-plugin/marketplace.json`: the marketplace entry that points at the
   plugin folder.
 
-Each skill is a folder under `plugins/ponderly/skills/` with a `SKILL.md`;
-each rule is a Markdown file under `plugins/ponderly/rules/`.
+Each skill is a folder under `plugins/claude/ponderly/skills/` with a `SKILL.md`;
+each rule is a Markdown file under `plugins/claude/ponderly/rules/`.
 
 A small change, such as a typo, a one-line fix or a rename: make it. A bug:
 run `/ponderly:bugfix`. Anything else: run `/ponderly:start-task`. It

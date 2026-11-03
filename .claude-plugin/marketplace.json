@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "ponderly",
-      "source": "./plugins/ponderly",
+      "source": "./plugins/claude/ponderly",
       "description": "This plugin helps you write code like a seasoned engineer, even if you don't know all the best practices."
     }
   ]

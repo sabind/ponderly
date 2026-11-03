@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PLUGIN_MANIFEST = ROOT / "plugins" / "ponderly" / ".claude-plugin" / "plugin.json"
+PLUGIN_MANIFEST = ROOT / "plugins" / "claude" / "ponderly" / ".claude-plugin" / "plugin.json"
 
 UNKNOWN = "unknown"
 NOT_DEFINED = "—"

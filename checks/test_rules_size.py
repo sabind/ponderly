@@ -20,7 +20,7 @@ import unittest
 from reminder_harness import hook_input, make_plugin, run_hook
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN = os.path.join(ROOT, "plugins", "ponderly")
+PLUGIN = os.path.join(ROOT, "plugins", "claude", "ponderly")
 LOAD_RULES = os.path.join(PLUGIN, "hooks", "load-rules.sh")
 LOAD_RULES_SUBAGENT = os.path.join(PLUGIN, "hooks", "load-rules-subagent.sh")
 RULES = os.path.join(PLUGIN, "rules")

@@ -36,7 +36,7 @@
 # failed grader can be read without a paid rerun. Paste the table the command
 # prints into the PR's Testing section.
 
-PLUGIN := plugins/ponderly
+PLUGIN := plugins/claude/ponderly
 EVAL_MAX_COST_USD ?= 2
 EVAL_ARGS ?=
 CASE_ARGS :=

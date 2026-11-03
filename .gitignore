@@ -6,4 +6,4 @@ benchmarks/reviewbench/runs/
 benchmarks/martian/.martian/
 benchmarks/martian/runs/
 benchmarks/martian/work/
-plugins/ponderly/state/
+plugins/claude/ponderly/state/

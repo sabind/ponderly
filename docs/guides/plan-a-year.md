@@ -27,7 +27,7 @@ changed to match.
   claude plugin install ponderly@sabind
   ```
 
-  The [plugin README](../../plugins/ponderly/README.md#install) has the
+  The [plugin README](../../plugins/claude/ponderly/README.md#install) has the
   rest of the install steps.
 - A repository to write the documents in. `strategy` and `hld` need no
   source code, so a docs repository works. `lld` reads the code the

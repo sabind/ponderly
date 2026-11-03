@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN = Path("plugins") / "ponderly"
+PLUGIN = Path("plugins") / "claude" / "ponderly"
 SKILLS_DIR = PLUGIN / "skills"
 AGENTS_DIR = PLUGIN / "agents"
 RULES_DIR = PLUGIN / "rules"
@@ -444,12 +444,12 @@ class CapturesTest(unittest.TestCase):
 FIXTURE_SOURCE = "title: A session\ndate: 2026-10-22\nplugin: ponderly v1.1.0\nsource: a demo session\nalt: Claude answers.\n\n> a request\n● an answer\n"
 
 FIXTURE_FILES = {
-    "plugins/ponderly/skills/demo/SKILL.md": "---\nname: demo\n---\n",
-    "plugins/ponderly/agents/helper.md": "---\nname: helper\n---\n",
-    "plugins/ponderly/rules/style.md": "# Style\n",
-    "plugins/ponderly/hooks/hooks.json": "{}\n",
-    "plugins/ponderly/hooks/inject.sh": "#!/bin/sh\n",
-    "plugins/ponderly/README.md": "# Ponderly\n\n- `demo`: does a thing.\n- `helper`: helps.\n- `style`: a rule.\n",
+    "plugins/claude/ponderly/skills/demo/SKILL.md": "---\nname: demo\n---\n",
+    "plugins/claude/ponderly/agents/helper.md": "---\nname: helper\n---\n",
+    "plugins/claude/ponderly/rules/style.md": "# Style\n",
+    "plugins/claude/ponderly/hooks/hooks.json": "{}\n",
+    "plugins/claude/ponderly/hooks/inject.sh": "#!/bin/sh\n",
+    "plugins/claude/ponderly/README.md": "# Ponderly\n\n- `demo`: does a thing.\n- `helper`: helps.\n- `style`: a rule.\n",
     "llms.txt": "# Ponderly\n\n- `demo`: when you want a thing.\n- `helper`: when you want help.\n- `style`: always.\n",
     "docs/reference.md": "# Reference\n\n### demo\n\n### helper\n\n### style\n\n### inject.sh\n",
     "Makefile": "check:\n\tpython3 -m unittest\n",
@@ -613,9 +613,9 @@ class MissingComponentTest(FixtureTreeTest):
     """Property 2: Every component is named where it must be. Property 5: A failure names its place, here the page and the name."""
 
     def test_a_skill_the_listing_page_leaves_out_fails_with_the_page_and_skill(self):
-        self.replace("plugins/ponderly/README.md", "# Ponderly\n\n- `helper`: helps.\n- `style`: a rule.\n")
+        self.replace("plugins/claude/ponderly/README.md", "# Ponderly\n\n- `helper`: helps.\n- `style`: a rule.\n")
         self.assertEqual(
-            ["plugins/ponderly/README.md: no list item names the skill demo"], missing_components(self.root)
+            ["plugins/claude/ponderly/README.md: no list item names the skill demo"], missing_components(self.root)
         )
 
     def test_an_agent_the_reference_has_no_heading_for_fails_with_the_page_and_agent(self):
