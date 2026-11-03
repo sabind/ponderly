@@ -1,9 +1,9 @@
 ---
-description: 'Given a request that holds three open decisions, Claude says how many there are and asks only the first, with its context, options and recommendation, as rules/collaboration.md says. Proves Property 3 (one open decision per message) and serves Requirement 6.3.'
+description: 'Given a request that holds three open decisions, Claude says how many there are and asks only the first, with its context, options as what a customer''s burst of uploads does under each, and recommendation, as rules/collaboration.md says. Proves Property 3 (one open decision per message) and serves Requirement 6.3.'
 tags: [rule, collaboration]
 max_turns: 4
 allowed_tools: [Read, Glob, Grep]
-expected_outcome: Claude says there are three decisions, lays out the first, the backoff shape, with its context and the two options, recommends one, and asks only about that; it does not list options for the attempt count or the last-failure handling, and it writes no file.
+expected_outcome: Claude says there are three decisions, lays out the first, the backoff shape, with its context and the two options as what a customer's burst of uploads does under each, recommends one with its reason, and asks only about that; it does not list options for the attempt count or the last-failure handling, and it writes no file.
 ---
 Help me design a retry for the upload worker. Right now a failed upload is simply lost. I have not decided three things yet, in this order:
 
