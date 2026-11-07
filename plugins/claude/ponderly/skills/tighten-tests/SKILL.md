@@ -156,7 +156,7 @@ Run the checks one at a time, never in parallel, so that only one source file is
 Here a kept test is one whose Verdict is `keep`, and a new test is one the slimming added or merged another into.
 
 - **Each dropped test**: break the behaviour it covered, and run the remaining tests of the module. Any remaining test must fail. If none fails, relaunch the file's executor, as in step 6, to restore the dropped test, and report it.
-- **Each kept or new test**: remove or invert the behaviour it claims to test, and run that test. It must fail. A test that still passes is a Vacuous_Test: relaunch its file's executor, as in step 6, with the mutation that left it passing, to fix the test so it fails under it. Run the check again, with a new backup. If it still passes, report it to the author as vacuous. Skip a test marked Expected_Failure, and say so.
+- **Each kept or new test**: remove or invert the behaviour it claims to test, and run that test. It must fail. A test that still passes is a Vacuous_Test: relaunch its file's executor, as in step 6, with the behaviour the test must catch and the name of the test that left it passing, to fix the test so it fails when that behaviour is removed; the session, not the executor, then runs the check again, with a new backup. If it still passes, report it to the author as vacuous. Skip a test marked Expected_Failure, and say so.
 
 When the checks are done, delete the backup folder. Then compare the source state with the record taken at the start of this step, stopping and reporting the diff if it differs, and run the source check. Keep the empty diff for the hand-back as the proof that the source is as it was.
 
