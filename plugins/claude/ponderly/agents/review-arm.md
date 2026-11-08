@@ -2,7 +2,7 @@
 name: review-arm
 description: Reads one pull request through one lens, such as correctness or security, gathering the diff itself and changing nothing, verifies each problem against the code at the head commit and returns an arm block, the lens followed by each finding anchored to its smallest line range with a severity, a category and a message that says what is wrong, why it matters and what would fix it. The review skill launches one per lens from its lenses file, and once more, for a lens whose findings the wave-reviewer contradicted, with its Findings for a second pass.
 tools: Read, Glob, Grep, Bash, LSP, WebSearch
-model: inherit
+model: sonnet
 effort: high
 ---
 
