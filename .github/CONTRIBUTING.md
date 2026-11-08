@@ -149,8 +149,8 @@ The repository is laid out as:
 - `evals/`: the eval cases, kept outside the plugin folder for the reason
   [Evals](#evals) gives.
 - `checks/`: the free unit tests.
-- `benchmarks/`: the ReviewBench and Martian harnesses that score the `review`
-  skill, kept outside the plugin folder and never shipped with it.
+- `benchmarks/`: the harnesses that score the `review` skill against outside
+  benchmarks, kept outside the plugin folder and never shipped with it.
 - `.ponderly/specs/`: the design records of past tasks.
 - `.claude-plugin/marketplace.json`: the marketplace entry that points at the
   plugin folder.

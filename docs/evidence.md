@@ -51,11 +51,9 @@ Claude Code without the plugin, and the table gains a column for each arm and
 the difference. That doubles the cost, so raise the cost ceiling with
 `EVAL_MAX_COST_USD`. [`evals/README.md`](../evals/README.md) has the rest.
 
-The `review` skill is also scored against two public code review benchmarks,
-which run by hand in Docker and never in CI:
-[ReviewBench](../benchmarks/reviewbench/README.md) and
-[Martian's 50 pull requests](../benchmarks/martian/README.md). Each README
-says what a run costs and which targets to run.
+The `review` skill is also scored against outside code review benchmarks,
+which run by hand in Docker and never in CI.
+[`benchmarks/`](../benchmarks/) has the rest.
 
 ## Results against Claude Code without the plugin
 
@@ -66,11 +64,8 @@ rules' own preferences, so the plugin wins by construction. Where plain Claude
 already behaves this way, the two arms tie, as four rows below do; the
 per-case notes say why the other ties are ties.
 
-The evidence with an outside answer key is the `review` skill scored on
-ReviewBench and on Martian's 50 pull requests, whose answer keys are written
-outside this repository. The [ReviewBench README](../benchmarks/reviewbench/README.md)
-and the [Martian README](../benchmarks/martian/README.md) say how to run them.
-This page publishes no score from them yet.
+The outside benchmarks the `review` skill is scored on have answer keys written
+outside this repository. This page publishes no score from them.
 
 These are the five rule targets, each run with and without the plugin. The
 with-plugin arm loads the whole plugin, every rule, skill, agent and hook, not
