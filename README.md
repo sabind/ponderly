@@ -2,6 +2,8 @@
 
 This plugin helps you write code like a seasoned engineer, even if you don't know all the best practices. It leans on our own thinking for reasoning, since even the best AIs cannot reason: they predict the next token in a sequence, and we have to decide which direction to point them in. It aims to slow the AI down when the scope is unclear and let it run fast when it knows what to do. At the same time, it catches the AI before it lets itself make mistakes or assumptions, so the pace always fits the level of understanding.
 
+How it was built, and what it caught on the site it was tuned on, is told at [dansabin.com/projects/ponderly](https://dansabin.com/projects/ponderly).
+
 Docs: guides to [plan a year](docs/guides/plan-a-year.md), [build a feature](docs/guides/build-a-feature.md), [fix a bug](docs/guides/fix-a-bug.md), [make a small change](docs/guides/make-a-small-change.md) and [tune a template](docs/guides/tune-a-template.md); [the Reference](docs/reference.md); [the evidence](docs/evidence.md); [contributing](.github/CONTRIBUTING.md).
 
 ## Install
