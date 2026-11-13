@@ -61,8 +61,10 @@ why:
   and tasks first.
 
 The reason is two or three sentences that name the code it read. The
-statement also names the task and a proposed branch. The skill does not
-create the branch.
+statement also names the task and a proposed branch. On the executor
+route it also names the model the executor is launched on, Haiku or Sonnet,
+and the effort it proposes. You can change the effort in your answer to the
+route question. The skill does not create the branch.
 
 The example's route statement was shown in the session but is not in the
 saved transcript, so there is no image of it. Read it and check that the
@@ -143,7 +145,9 @@ not the executor, not the skill.
 When the executor finishes, the skill first checks what it deleted. If the
 `deleted` field names anything other than the executor's own folder, a path
 inside it or one of its changed files, or the field is missing, the skill
-says so before anything else. Next, if any check failed, the skill says so.
+says so before anything else. Next, if any check failed, the skill says so;
+when the executor ran on Haiku, it first launches one new executor on Sonnet
+without asking you, and what follows is that executor's Summary.
 Then it shows the Summary word for word. The Summary has these fields:
 
 - `status`: `done` or `stopped`.
@@ -181,9 +185,14 @@ need a new dependency, framework or tool. Its Summary then has
 `status: stopped` and a `stopped because` field with the question you must
 answer. The example did not stop, so there is no image of this.
 
-The skill shows the Summary and any partial edits, and says those edits are
-in your working tree. Then it asks, with the header `Relaunch` and two
-options:
+When the executor ran on Haiku, the skill does not ask you yet. It launches
+one new executor on Sonnet without asking, gives it the Haiku Summary's
+`stopped because` and the files that hold partial edits, and goes on with
+the Summary that executor returns.
+
+When a Sonnet executor has stopped, the skill shows the Summary and any
+partial edits, and says those edits are in your working tree. Then it asks,
+with the header `Relaunch` and two options:
 
 - **Answer and relaunch**: answer the question under `stopped because`, and
   the skill launches the executor again with your answer.
@@ -191,8 +200,10 @@ options:
 
 A free-text answer counts as `Answer and relaunch`, with that text as the
 answer. If you pick `Answer and relaunch` with no text, the skill asks you
-for the answer in prose, once, before it relaunches. The skill never
-relaunches on its own.
+for the answer in prose, once, before it relaunches. The one relaunch the
+skill makes without asking is the Sonnet executor after an executor that ran
+on Haiku fell short, a stop included; otherwise it never relaunches on its
+own.
 
 ## 7. Read the hand-back
 

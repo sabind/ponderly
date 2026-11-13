@@ -54,6 +54,8 @@ Each skill's arguments, questions and outputs are in the Reference's [Skills](ht
 - `document-reviewer`: reviews one strategy, high level design or low level design against its template and its parent.
 - `review-arm`: reviews one pull request through one lens, such as correctness or security, and returns the problems it verified, each anchored to its lines, with the list of files it read; it reads every changed file whole, a moved one included, settles what a tool outside the repository does with web search when offered and when the host's permissions allow it, which by default means asking you on first use, with queries that carry nothing of the repository or the pull request, and through the testing lens lists each behaviour the change introduces or alters and reports each one no test would catch.
 
+Every agent runs at `medium` effort. The `wave-reviewer` runs on Opus and the other three on Sonnet; a skill launches the `task-executor` on Haiku for a small task. The skill proposes the effort before it launches and passes a different one only when you or its reason for `high` chose another level.
+
 How to launch each agent, what its prompt carries and what it returns are in the Reference's [Agents](https://github.com/sabind/ponderly/blob/main/docs/reference.md#agents) section.
 
 ## Rules

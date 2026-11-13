@@ -107,11 +107,13 @@ Show the Audit as the approval question's text:
 - the File_Groups: the test files that hold a `merge` or a `drop`, or a test that failed at the Baseline because the source is wrong, sorted into groups, each with its files and why they belong together;
 - the Shared_Decisions for applying the Verdicts, such as how a merged test is named, where a shared fake goes, and how an Expected_Failure is marked in this project's test framework.
 
+Before the question, state the effort proposed for the executors and the wave reviewer: `medium` for the executors, and for the wave reviewer `medium` too unless a High_Effort_Criterion holds. The criteria: the author named a level in the request or an earlier answer; the requirements, or the code and tests under Scope, concern security, authentication or sign-in, money or payments, deleting or migrating data, or concurrency. When it proposes `high`, name the criterion and say that a wave reviewer launch at high is expected to cost up to about a quarter more than at medium, about $0.28 more, in list prices, not what a subscription bills. The author's free-text answer can change the level; take it as the chosen effort.
+
 Ask, header `Approve`, options `Approved` and `Changes needed`, whether to apply these Verdicts with these File_Groups and Shared_Decisions. If the dialog cannot hold them, write them as a message immediately followed by the question. A Verdict, group or decision the author changes takes the author's value; a change that drops or merges a test on the Keep_List takes it off the Keep_List, and say so. Show the changed records and ask again. Apply no Verdict until the answer is a plain yes.
 
 ## 6. Apply the Verdicts
 
-Launch one executor per approved File_Group, with `subagent_type: ponderly:task-executor`, all in one message so they run concurrently. Before launching, make each executor its own folder with `mktemp -d "<scratchpad>/tighten-tests-executor-XXXXXX"`, one per launch. Never say to an executor, in any words, that its task comes from a spec. Each prompt holds:
+Launch one executor per approved File_Group, with `subagent_type: ponderly:task-executor`, `model` by the Small_Task test in that agent's description (`haiku` for a Small_Task, `sonnet` for any other group or when its size is unclear), and `effort` only when the chosen effort is not `medium`, all in one message so they run concurrently. If a launch that passes `effort` fails with an error naming it, because Claude Code is older than 2.1.292, launch it again without `effort` and tell the author the chosen level could not be applied. Before launching, make each executor its own folder with `mktemp -d "<scratchpad>/tighten-tests-executor-XXXXXX"`, one per launch. Never say to an executor, in any words, that its task comes from a spec. Each prompt holds:
 
 - the group's file paths, and that they are the only files to change;
 - each file's approved Verdicts, each test quoted with its Verdict and the test it merges into or why it goes;
@@ -129,12 +131,14 @@ Launch one executor per approved File_Group, with `subagent_type: ponderly:task-
 When every executor has returned:
 
 - For every Summary, `done` or `stopped`, check `deleted:` first. Each entry must be the own folder made for that launch, a path inside it, or a file under its `files changed`. An entry outside both, or a Summary with no `deleted:` field, stops the run: report it to the author as a problem, the entry quoted, before any record in the Run_Folder is used, and leave the Run_Folder in place, naming its full path in the stop so the author can inspect what is left.
-- A `stopped` Summary is shown to the author as it is. That group's files are left as they are and carried to the hand-back.
-- For a `done` Summary, check that its `files changed` lists only its own group's test files. Any other file is treated as a changed source file: stop and report it. Then run the commands under its `checks run` yourself.
+- A `stopped` Summary from a launch on `haiku` is escalated, as below, before anything is shown. Any other `stopped` Summary is shown to the author as it is. That group's files are left as they are and carried to the hand-back.
+- For a `done` Summary, check that its `files changed` lists only its own group's test files. Any other file is treated as a changed source file: for a launch that ran on `haiku`, make the source Escalation below; otherwise stop and report it. Then run the commands under its `checks run` yourself.
 - Each Expected_Failure an executor marked, and each defect it reported, goes to the hand-back's problems, with the test and the defect.
-- Run the source check.
+- Run the source check. When it differs and the difference comes from a group whose executor ran on `haiku`, make the source Escalation below.
 
-Later steps relaunch a file's executor "as in step 6": a new executor for the File_Group that owns the file, with a new own folder made as above and the same prompt, its own sentences included, its job replaced by the one that step gives; its Summary is checked as above.
+Later steps relaunch a file's executor "as in step 6": a new executor for the File_Group that owns the file, with a new own folder made as above and the same prompt, its own sentences included, its job replaced by the one that step gives; its Summary is checked as above. Each relaunch of Haiku work, "as in step 6" or not, runs on `sonnet`, and passes `effort` as step 6 does.
+
+When a launch that ran on `haiku` returns a Shortfall (a `stopped` Summary, a check under `checks run` that fails when you run it, or a finding sent back to its executor), make one Escalation without asking the author: a new executor for the same group, launched as in step 6 on `sonnet`, never a follow-up to the Haiku one. Its prompt adds the Haiku Summary, the failing output or finding, and for a stop the `stopped because` quoted and the files that already hold partial edits. Where this skill allows two fix attempts, the Escalation is the first. The source Escalation, for a changed source file named by a `haiku` executor's Summary or found by the source check, is one Escalation without asking: a new executor for the group on `sonnet`, launched as in step 6, whose prompt adds the Haiku Summary, the diff of the source files it changed (from comparing the source state with the Baseline's), and the instruction to put those source files back exactly as the Baseline's source state records them before doing the group's work. Then run the source check again: if it matches, carry on with the Sonnet Summary; if it still differs, or the Sonnet Summary also names a file outside its group, stop and report as above. The `deleted:` stop is not escalated. A Shortfall after a `sonnet` launch, the Escalation included, is handled as the rules above and below say.
 
 ## 7. Compare coverage
 
@@ -162,7 +166,7 @@ When the checks are done, delete the backup folder. Then compare the source stat
 
 ## 9. Review
 
-Launch the reviewer once, with `subagent_type: ponderly:wave-reviewer`, and a prompt that holds:
+Launch the reviewer once, with `subagent_type: ponderly:wave-reviewer`, passing `effort` only when the chosen effort is not `medium`, and a prompt that holds:
 
 - the list of test files this run changed, from the executors' Summaries and the restorations of steps 7 and 8;
 - the requirements the branch serves, quoted, from step 3; or, when there are none, the Keep_List, quoted;

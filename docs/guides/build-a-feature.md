@@ -112,7 +112,10 @@ Then it states which wave it is at and which tasks are in it, and asks one
 round of questions: how often to hand back (after each task, after each
 wave, or only at the end), how to treat optional tests (ask, always or
 never), and, when you are on the default branch, whether to create a branch
-under the task's name. It changes no code until you answer.
+under the task's name. Whenever it asks any of these, it asks the effort
+for the run's executors and wave reviewers in the same round, with the level
+it proposes; when it asks none of them, it states the proposed effort and
+goes on. It changes no code until you answer.
 
 Then it works one wave at a time. Each task gets its own `task-executor`
 agent. When every executor has come back, one `wave-reviewer` agent reads
@@ -186,8 +189,9 @@ The author picked **Reorder (Recommended)**.
 
 ![The wave 3 report opens with the stopped README task under Problems, then Done, Checks, Files and Next with two ways to fix the README's first screen; Claude asks which, with the options Reorder (Recommended) and Keep order, relax to 90, and the author picks Reorder (Recommended).](../images/feature-executor-answer.svg)
 
-The spec is yours. When an executor stops, you decide how the spec changes,
-and the run goes on from there.
+The spec is yours. A task that falls short on Haiku, a stop included, goes
+first to a new Sonnet executor without asking you. When an executor then
+stops, you decide how the spec changes, and the run goes on from there.
 
 ## 7. Optional: make the code readable and tighten the tests
 
