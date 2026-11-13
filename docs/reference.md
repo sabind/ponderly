@@ -169,7 +169,10 @@ Builds a task from its approved spec, wave by wave.
   task. It ticks a task in `tasks.md` only once its tests pass or its manual
   check is done. It runs the full suite at the end of every wave, and the
   `wave-reviewer` agent reads each wave. You get a short report after each
-  wave and a final review of the whole run. Each discovery outside the task
+  wave and a final review of the whole run; each report shows each
+  executor's record with the reviewer's checks beside it, and lists record
+  lines that do not match, lines not checked and files in no record among its
+  problems. Each discovery outside the task
   in hand is listed with its size and the choice between a task and an issue.
   It never edits the spec beyond its checkboxes without your approval.
 - **Hands off to:** `pr` when every non-optional task is ticked;
@@ -235,7 +238,9 @@ unchanged.
   branch. It never adds a test framework. It stops without changing anything
   when the branch changes no source file. The hand-back, written by `report`,
   lists every stopped executor, every difference kept and every finding left
-  open.
+  open. It shows each executor's record with the reviewer's checks beside it,
+  and lists record lines that do not match, lines not checked and files in no
+  record among its problems.
 - **Hands off to:** `tighten-tests` to clean up the branch's tests now that
   the code reads plainly, or `pr` to open the pull request. It commits
   nothing.
@@ -279,8 +284,10 @@ smaller suite no weaker.
   A test that fails because the source is wrong is marked as an expected
   failure. The hand-back, written by `report`, carries the problems first,
   the test counts before and after, coverage per module before and after,
-  the empty source diff that proves no source file changed, and each gap as
-  a task for one run of `start-task`. On `File them`, each gap becomes its
+  the empty source diff that proves no source file changed, each executor's
+  record with the reviewer's checks beside it (record lines that do not
+  match, lines not checked and files in no record go among the problems),
+  and each gap as a task for one run of `start-task`. On `File them`, each gap becomes its
   own issue with `gh issue create`. When the project has no coverage tool
   and you choose `Add one`, it adds one as a development dependency with the
   project's own package manager, which changes the project's manifest and
@@ -508,6 +515,15 @@ style, proves it, and deletes only its own scratch folder.
   why none applied, `deleted` with the full path of every file and folder it
   deleted or `nothing`, what it is `unsure` of, and, when stopped, the
   question or evidence under `stopped because`.
+- **Its record:** the `files changed` lines and the `unsure` items. Every
+  file it created, edited or removed sits on exactly one `files changed`
+  line, which gives the path and the reason: what changed, and why only
+  when the code does not make it plain or the executor chose one way of doing
+  it over another. Several paths share a line only for the same change made for the same
+  reason. A stopped Summary's partial edit begins its reason with
+  `partial:`, and when it changed no file the field reads `none`. An
+  `unsure` item about one line's change begins with that line's paths; every
+  other `unsure` item stays as it is.
 - **Cleanup:** it keeps all scratch work in its own folder, the one the
   launch prompt names or one it makes under the session's scratchpad, and
   deletes that folder when it finishes, done or stopped. Outside it, it
@@ -529,7 +545,11 @@ changes nothing.
   outside-lens leads.
 - **What the prompt carries:** the files that changed, or a git range; the
   requirement or design text they implement, if any; the files that cite
-  them; and, when they come from a spec, the sentence "These changes come
+  them; from `implement-spec`, `readable-code` and `tighten-tests`, the
+  executors' `files changed` and `unsure` quoted, after the sentence "These
+  are the executors' records of their work. Read them only at the record
+  step of your procedure, after you have judged every change on its own.";
+  and, when they come from a spec, the sentence "These changes come
   from a spec wave". Only that sentence waives a missing test; otherwise a
   missing test is a finding. From `review`, it carries instead the sentence
   that the changes are a pull request reviewed for the review skill: then it
@@ -546,7 +566,25 @@ changes nothing.
 - **What it returns:** Findings: a `verdict` (`holds` or `findings`), the
   `base` commit the diffs were measured against, then each problem with its
   `file`, an exact `quote`, the `problem` and a `severity` (`blocker`,
-  `should-fix` or `nit`), and what it is `unsure` of.
+  `should-fix` or `nit`), then `records:`, and what it is `unsure` of.
+- **Its record step:** it does not read the executors' records while it
+  judges the changes, and a record never withdraws or softens a finding.
+  Once every change is judged, it reads the records the launch quotes and
+  checks each `files changed` line against the change it has already judged.
+  A line `matches` when its paths are the files the diff shows changed for it
+  and its reason truly describes that change. Otherwise it `does not
+  match`: the reason describes a different change, the line has no reason, it names a file the diff does not show
+  changed, or it groups files whose changes differ. A changed file that no
+  line names gets its own entry, `not in any record`. For each `unsure` item
+  of a line that the code can settle, it quotes the item and what the code
+  shows. When the change itself is wrong, that is a finding as well.
+- **The `records:` section:** one entry per `files changed` line quoted,
+  plus one per changed file no line names. Each entry holds the `files`, the
+  `check` (`matches`, `does not match` or `not in any record`), a `quote` of
+  the line and the change, left out when it matches, and what the code
+  `settled` for that line's `unsure` items, or `none`. The `verdict` still
+  depends only on `findings:`, never on `records:`. When the launch quotes no
+  records, the section reads `records: none given`.
 
 ### document-reviewer
 

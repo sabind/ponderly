@@ -125,7 +125,7 @@ Skipped tests stay unticked and are listed as skipped in the report.
 
 ### Reviewing the wave
 
-Once every executor of the wave has returned, whatever each returned, and before any tick, review the wave as a whole. The review covers the tasks that passed their own checks, together with any task that appeared already done; those are fixed and ticked after it as below, and then a task that stopped, or still fails after two fix attempts, goes to step 6. At task cadence, where the wave's earlier tasks were ticked at their hand-backs, the review runs once, when the wave's last task has passed its checks and before its tick, and covers the whole wave; a task that stops or will not pass before then goes to step 6 at once, and the review waits for the wave's last task. The file list and the `unsure` items come from this run's summaries and, after a resume, from the reports of the earlier hand-backs: the files and the problems each one lists (its Files and Problems sections in the plugin's template).
+Once every executor of the wave has returned, whatever each returned, and before any tick, review the wave as a whole. The review covers the tasks that passed their own checks, together with any task that appeared already done; those are fixed and ticked after it as below, and then a task that stopped, or still fails after two fix attempts, goes to step 6. At task cadence, where the wave's earlier tasks were ticked at their hand-backs, the review runs once, when the wave's last task has passed its checks and before its tick, and covers the whole wave; a task that stops or will not pass before then goes to step 6 at once, and the review waits for the wave's last task. The file list and the `unsure` items come from this run's summaries and, after a resume, from the reports of the earlier hand-backs: the files and the problems each one lists (its Files and Problems sections in the plugin's template). The records of tasks ticked at an earlier hand-back come from that hand-back's report, which shows each task's record under its done work.
 
 Launch the reviewer with `subagent_type: ponderly:wave-reviewer`, once, and a prompt that holds:
 
@@ -133,6 +133,7 @@ Launch the reviewer with `subagent_type: ponderly:wave-reviewer`, once, and a pr
 - the list of files the wave changed or created, taken from the `files changed` of the wave's summaries, with the files of tasks that appeared already done or that the author did by hand, as under "Starting a wave", and with any file two executors changed named as such;
 - the requirement and design excerpts the wave's tasks cite, quoted;
 - the files that cite the changed ones: search the repository for each changed file's path and name.
+- the sentence, verbatim, "These are the executors' records of their work. Read them only at the record step of your procedure, after you have judged every change on its own.", then each task's `files changed` and `unsure` from its Summary, quoted, headed by the task's number: every Summary of the task returned before the review, in order, when fix attempts for failing tests gave it several.
 
 Nothing more, and never the diff: the reviewer runs `git diff` and reads the files itself, so the diff never enters this session. Its own definition carries its procedure and the shape of its Findings, and the `SubagentStart` hook puts the handbook rules in its context, so the launch restates none of them. Wait for its Findings. One reviewer per wave: no second reviewer with another lens, no refuter after it, and no second review after the fixes. The one other review is the final review of the whole run at spec cadence, in step 8.
 
@@ -144,6 +145,7 @@ Collect every `unsure` item from the wave's summaries, and the reviewer's own, b
 - A `nit` is fixed the same way or carried.
 - The reviewer's own `unsure` items follow the same split: those about the changes are handled like findings, those outside the changes go under the report's problems (its Problems section in the plugin's template), with the reason they were not fixed, and not under its next step (its Next section in the plugin's template).
 - Anything else is outside the wave. Anything carried, whether a `nit`, an `unsure` item that is not a defect or a problem outside the wave, goes under the report's problems, with the reason it was not fixed, and not under its next step.
+- The Findings' `records:` section is read beside them. A `records:` entry that does not match, a quoted line with no entry, listed as not checked, and a `not in any record` entry go under the report's problems, quoted. An `unsure` item the entry's `settled:` names is reported as settled, with what the code showed; every other `unsure` item is handled as above. A `not in any record` entry for a file of a task that appeared already done or that the author did by hand is not listed as a problem, since that task has no record: the report shows it under that task's done work as awaiting the author's review, to confirm the change is the one the task intended.
 
 Tick only after that: every task of the wave whose checks passed, any that appeared already done, or at task cadence the wave's last task.
 
@@ -158,6 +160,8 @@ Hand back here at the end of a cadence unit (after a task at task cadence, after
 To write the report, invoke the Skill tool with `skill: ponderly:report` and `args: handback`, once, in this session; its Message is the report, with nothing written before or after it in that message. If the Skill tool cannot find `ponderly:report`, say the plugin's `report` skill is missing and write the hand-back by the communication rule, Problems first.
 
 At spec cadence each report covers its own wave, and the reports stack up in the conversation, one per wave, for the final review and the final report of step 8 to read back. A hand-back that waits, for a failure, an unfixed finding, a failed `deleted:` check or a proposal, covers the wave it stops in, with the earlier waves' reports already above it.
+
+The report shows each task's record under its done work, with the reviewer's `records:` checks beside it, and a fix's record made after the review beside the record it amends, marked as not reviewed; it is not listed as not checked, and its `unsure` items are handled like any other.
 
 The failing output, the finding, the proposed edit and the question are already in the conversation the report skill reads. Each goes under the report's problems or its next step (the Problems and Next sections in the plugin's template), by the cause of the hand-back:
 
@@ -189,6 +193,7 @@ At spec cadence, finish in three parts:
 2. **Final review.** Launch the reviewer once more, with `subagent_type: ponderly:wave-reviewer`, over the whole run, and a prompt that holds:
    - the sentence, verbatim, "These changes come from a spec wave", which tells the reviewer that a code task correctly lacks a test;
    - the full list of files the run changed or created, taken from the files every wave's report lists;
+   - the sentence, verbatim, "These are the executors' records of their work. Read them only at the record step of your procedure, after you have judged every change on its own.", before the wave reports below, which carry the records. The sentence covers only the records inside the wave reports, each task's `files changed` and `unsure` lines; the rest of each report is read as before;
    - each wave's report as written: its problems, what was done, its checks with the full-suite result and the wave-review verdict, its files and its next step;
    - the requirement and design excerpts the run's tasks cite, quoted;
    - the files that cite the changed ones, found as for a wave review.

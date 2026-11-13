@@ -168,7 +168,8 @@ Launch the reviewer once, with `subagent_type: ponderly:wave-reviewer`, and a pr
 - the requirements the branch serves, quoted, from step 3; or, when there are none, the Keep_List, quoted;
 - the approved Verdicts for every `drop` and `merge`;
 - the job: report any requirement, or test on the Keep_List, left with no test that proves it;
-- the files that cite the changed ones: search the repository for each changed file's path and name.
+- the files that cite the changed ones: search the repository for each changed file's path and name;
+- the sentence, verbatim, "These are the executors' records of their work. Read them only at the record step of your procedure, after you have judged every change on its own.", then every Summary of each File_Group returned before the review, in order, its `files changed` and `unsure` quoted, under the File_Group's heading.
 
 Nothing more, and never the diff, which the reviewer gathers itself.
 
@@ -178,6 +179,7 @@ Wait for its Findings. Then:
 - A `blocker` or `should-fix` that needs a source change is not fixed; it goes to the hand-back's problems, quoted.
 - Every other `blocker` or `should-fix` is fixed, for up to two fix attempts. One in a test file this run changed goes to the executor of the File_Group that owns the file, relaunched as in step 6. One in a file the slimming made wrong without changing it, such as a shared fake that only dropped tests used and that is now dead, or a document that counts the tests, goes to a new executor, launched as in step 6 with that file as a group of one and the finding as its whole task; never a source file. After each attempt, run that file's tests. Then, once the executor has returned, run the Mutation_Check of step 8 yourself, in this session, for every test the fix changed, one at a time and with the backup folder, as step 8 does, handling a Vacuous_Test as step 8 does; never ask an executor to run one. Then run the source check. A finding still open after the two attempts goes to the hand-back's problems, quoted.
 - Every `nit`, and every finding in a file the slimming neither changed nor made wrong, goes to the hand-back's problems, quoted.
+- A `records:` entry that does not match and a `not in any record` entry go to the hand-back's problems, quoted; a quoted line with no entry goes there too, quoted, as not checked. A `settled` `unsure` item is reported as settled, with what the code showed; every other `unsure` item is handled as step 6 handles a defect an executor reported.
 
 There is no second review after the fixes.
 
@@ -187,11 +189,11 @@ First read every record the Message needs from the Run_Folder, then delete the R
 
 Invoke the Skill tool with `skill: ponderly:report` and `args: handback`, inline, to write the hand-back Message. It carries:
 
-- the problems, first: each executor that stopped; each Expected_Failure with its defect; each line that lost its test and the test restored; each dropped test restored by a Mutation_Check; each Vacuous_Test left unfixed; each review finding still open after two fix attempts, each that needs a source change, and each `nit`; each check not run, such as coverage when there is no tool, and readability when the author went on without it;
+- the problems, first: each executor that stopped; each record line that does not match, each line not checked and each file in no record, quoted; each Expected_Failure with its defect; each line that lost its test and the test restored; each dropped test restored by a Mutation_Check; each Vacuous_Test left unfixed; each review finding still open after two fix attempts, each that needs a source change, and each `nit`; each check not run, such as coverage when there is no tool, and readability when the author went on without it;
 - the test counts before and after, per file and in total;
 - the coverage per module at the Baseline and after;
 - the empty source diff of step 8;
-- the files changed;
+- the files changed, each File_Group's record under its done work with the reviewer's `records:` checks beside it, and a fix's record beside the record it amends, marked as not reviewed, its lines not listed as not checked and its `unsure` items handled like any other;
 - each Gap as a separate task one `start-task` run could take, saying what is unproved and where; none is filled here;
 - the next step: `/ponderly:pr`. Nothing is committed.
 

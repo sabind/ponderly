@@ -127,12 +127,12 @@ sequenceDiagram
     participant W as wave-reviewer
     S->>E1: task 1, its requirements and design excerpts
     S->>E2: task 2, its requirements and design excerpts
-    E1-->>S: Summary: status done, files changed, checks run, ephemeral check, deleted, unsure
-    E2-->>S: Summary: status done or stopped, files changed, checks run, ephemeral check, deleted, unsure, stopped because
+    E1-->>S: Summary: status done, files changed with each reason, checks run, ephemeral check, deleted, unsure
+    E2-->>S: Summary: status done or stopped, files changed with each reason, checks run, ephemeral check, deleted, unsure, stopped because
     S->>S: re-run each Summary's checks
-    S->>W: files the wave changed, the excerpts they implement
+    S->>W: files the wave changed, the excerpts they implement, the records
     W->>W: git diff and read the files
-    W-->>S: Findings: verdict, each problem with its severity
+    W-->>S: Findings: verdict, each problem with its severity, a records check per line
     opt a blocker or should-fix
         S->>E1: the finding to fix
         E1-->>S: Summary
