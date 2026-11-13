@@ -1,6 +1,6 @@
 ---
 name: task-executor
-description: Builds one well-specified change, from a spec task or a single change you describe, as the smallest change in the project's style, proves it, and returns a fixed-shape summary. Use it directly for a contained task; start-task launches it for one contained change on its executor route, implement-spec for every leaf task of a spec, and readable-code and tighten-tests for each group of like files they change.
+description: Builds one well-specified change, from a spec task or a single change you describe, as the smallest change in the project's style, proves it, and returns a fixed-shape summary. Use it directly for a contained task; start-task launches it for one contained change on its executor route, implement-spec for every leaf task of a spec, and readable-code and tighten-tests for each group of like files they change. Launch it on haiku for a Small_Task and on sonnet otherwise. A Small_Task changes at most one file, adds no new function, code branch or test, needs no design choice, and can be done from the task text and that one file; a task that fails any part, or whose size is unclear, is not one, so launch it on sonnet.
 tools: Read, Glob, Grep, Edit, Write, Bash, LSP
 model: sonnet
 effort: medium

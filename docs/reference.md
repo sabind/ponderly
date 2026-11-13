@@ -63,10 +63,14 @@ The front door for any request to change code.
 - **What it does:** reads the code the request touches, then picks one of
   three routes. One contained change goes to the `task-executor` agent. A
   defect goes to `bugfix`. Everything else becomes a spec.
-- **What it asks:** which route, when it picks the executor or `bugfix`; the
-  fit, when the request extends nothing in the codebase; the spec questions,
-  in prose, before the requirements; your approval of each spec document;
-  and whether to relaunch, after the executor stops.
+- **What it asks:** which route, when it picks the executor or `bugfix`; on
+  the executor route only, the route statement above the question names the
+  model it launches the executor on and the effort it proposes (a level you
+  name, in the request or in your answer, is taken); the fit, when the request extends nothing in the
+  codebase; the spec questions, in prose, before the requirements; your
+  approval of each spec document; and whether to relaunch, after a Sonnet
+  executor stops. An executor that ran on Haiku and falls short, a stop
+  included, is relaunched on Sonnet without asking.
 - **What it writes:** on the spec route, `requirements.md`, `design.md` and
   `tasks.md` in `.ponderly/specs/<task>/`, from the team template, one at
   a time. You see each as its path and a short summary, and approve it before
@@ -87,7 +91,9 @@ Writes a tech strategy: about a year of work across one or more projects.
 - **What it asks:** it first reads the strategies already under
   `.ponderly/strategies/`. Then it asks one round of questions in prose.
   It asks whether to overwrite or resume when the document already exists,
-  and asks you to approve the document.
+  and asks you to approve the document. In the same round, it proposes the
+  effort for the `document-reviewer` agent, and names the reason when it
+  proposes `high`.
 - **What it writes:** `.ponderly/strategies/<name>.md`, from its template.
   The `document-reviewer` agent reads the draft for up to two rounds before
   you see it. You see the path and a summary, open findings first. It writes
@@ -109,8 +115,10 @@ strategy names.
 - **What it asks:** it reads the strategy in full first. It asks you to paste
   the strategy when its path cannot be read, whether to go on with no parent
   when no path was given, and which candidate when your words name none of
-  the strategy's. Then one round of questions in prose; overwrite or resume
-  when the document exists; and your approval.
+  the strategy's. Then one round of questions in prose, which also proposes
+  the effort for the `document-reviewer` agent, naming the reason when it
+  proposes `high`; overwrite or resume when the document exists; and your
+  approval.
 - **What it writes:**
   `.ponderly/designs/<strategy-name>/<hld-name>/hld-<hld-name>.md`, or
   `.ponderly/designs/<hld-name>/hld-<hld-name>.md` when it has no
@@ -136,7 +144,9 @@ level design names, down to its tasks.
   component touches first. It asks you to paste the design when its path
   cannot be read, whether to go on with no parent when no path was given,
   and which candidate when your words name none. Then one round of questions
-  in prose; overwrite or resume when the document exists; and your approval.
+  in prose, which also proposes the effort for the `document-reviewer` agent,
+  naming the reason when it proposes `high`; overwrite or resume when the
+  document exists; and your approval.
 - **What it writes:** `lld-<name>.md` in the high level design's folder, in
   this repository:
   `.ponderly/designs/<strategy-name>/<hld-name>/lld-<name>.md`, the two
@@ -161,12 +171,16 @@ Builds a task from its approved spec, wave by wave.
 - **What it asks:** once, at set-up: how often to hand back (after each task,
   after each wave, or only once every wave is done), how to treat optional
   tests (ask, always, never), and, when you are on the default branch,
-  whether to create a branch under the task's name. Only when
-  needed: which spec, when several exist and you named none; approval of a
+  whether to create a branch under the task's name. When it asks any of
+  those, it asks the effort for the run's agents too, with the level it
+  proposes and why; when it asks none, it states the proposal and goes on.
+  Only when needed: which spec, when several exist and you named none; approval of a
   fix to the task graph; how to go on after a failing suite or an unfixed
   finding; and a proposal when the design cannot be followed.
 - **What it writes:** the code, through one `task-executor` agent per leaf
-  task. It ticks a task in `tasks.md` only once its tests pass or its manual
+  task, launched on Haiku when the task is small and on Sonnet otherwise; it
+  names the model beside each task. A task that falls short on Haiku, a stop
+  included, goes to a new Sonnet executor without asking you. It ticks a task in `tasks.md` only once its tests pass or its manual
   check is done. It runs the full suite at the end of every wave, and the
   `wave-reviewer` agent reads each wave. You get a short report after each
   wave and a final review of the whole run; each report shows each
@@ -229,7 +243,9 @@ unchanged.
   `wave-reviewer` agent reads the pass, and its `blocker` and `should-fix`
   findings go back to the executors, up to two attempts each.
 - **What it asks:** your approval of the groups and shared decisions, with
-  `Approved` or `Changes needed`. Only when something is wrong: whether to go
+  `Approved` or `Changes needed`, shown with the effort it proposes for the
+  run's agents and why. An executor that ran on Haiku and falls short, a stop
+  included, is relaunched on Sonnet without asking. Only when something is wrong: whether to go
   on when the suite fails at the baseline; whether to go on with a manual
   check you name when the project has no test suite; and, for each file
   whose change made the suite or the synthesis differ, whether to revert it
@@ -275,7 +291,10 @@ smaller suite no weaker.
   with `Run readable-code first` recommended, since coverage is measured on
   the final code. Then, in prose, which tests must stay beyond those a
   requirement names. Then your approval of the verdicts, groups and shared
-  decisions, until you answer `Approved`. Only when something is wrong:
+  decisions, until you answer `Approved`; that message also carries the effort
+  it proposes for the run's agents and why. An executor that ran on Haiku and
+  falls short, a stop included, is relaunched on Sonnet without asking. Only
+  when something is wrong:
   whether to go on when the suite fails at the baseline; whether to add a
   coverage tool or use mutation checks alone, when the project has none; and
   whether to restore a test when a requirement is left with no proof. At the
@@ -374,7 +393,9 @@ findings, each anchored to lines at the head.
   through the same merge, so a folded finding is checked, collapsed and
   ordered like any other. There is only one second pass.
 - **What it asks:** nothing; every input comes from the arguments and the
-  repository.
+  repository. It states the effort it uses for the arms and the wave reviewer
+  before launching, `medium` unless you name a level in the request or it
+  names a reason for `high`, and goes on without waiting.
 - **What it writes:** in a session, one line per finding, such as
   `high correctness src/cart.py:41-44 <message>`, then a count line: the
   candidates the arms produced, how many the merge and the wave review
@@ -480,6 +501,11 @@ reviewer. `start-task` launches the executor for one contained change.
 The `strategy`, `hld` and `lld` skills launch the document reviewer on
 every draft. `review` launches the review arms and the wave reviewer.
 
+Every agent runs at `medium` effort. The wave reviewer runs on Opus and the
+other three on Sonnet, except that a skill launches the executor on Haiku for
+a small task. A skill passes a different effort only when you or its reason
+for `high` chose another level.
+
 You can launch any of them yourself. Mention it in a session as
 `@agent-ponderly:task-executor`, `@agent-ponderly:wave-reviewer`,
 `@agent-ponderly:document-reviewer` or `@agent-ponderly:review-arm`. Or have
@@ -492,6 +518,10 @@ a skill or session launch it with the Agent tool as
 Builds one well-specified change as the smallest change in the project's
 style, proves it, and deletes only its own scratch folder.
 
+- **Model:** the launching skill picks it per launch: Haiku for a small task
+  (at most one file, no new function, code branch or test, no design choice, doable
+  from the task text and that file), Sonnet otherwise or when the size is
+  unclear. Launched by name with no model, it runs on Sonnet.
 - **Launched by:** `start-task` for one contained change;
   `implement-spec` for every leaf task; `readable-code` for each group of
   like source files; and `tighten-tests` for each group of like test files.
@@ -533,8 +563,9 @@ style, proves it, and deletes only its own scratch folder.
 ### wave-reviewer
 
 Reviews one set of changes against the requirements and design they
-implement and the files that cite them. It gathers the diff itself and
-changes nothing.
+implement and the files that cite them. It gathers the diff itself, in one
+`git diff` over the listed tracked files, reads new files whole, and changes
+nothing.
 
 - **Launched by:** `implement-spec`, at the end of every wave, and once more
   over the whole run when you chose to hand back only at the end;
@@ -604,9 +635,9 @@ changes nothing.
 ### review-arm
 
 Reviews one pull request through one lens, such as correctness or security.
-It gathers the diff itself, verifies each problem against the code at the
-head, and changes nothing. Its bar for style, structure, comments and tests
-is the repository's own: what its `CLAUDE.md`, `AGENTS.md`, files under
+It gathers the diff itself, in one `git diff` over every changed file,
+verifies each problem against the code at the head, and changes nothing. Its
+bar for style, structure, comments and tests is the repository's own: what its `CLAUDE.md`, `AGENTS.md`, files under
 `.claude/rules/` and contributing guide say and the code around the change
 already does, not the handbook rules; a departure from a rule is a finding
 only when it costs the change something concrete. It puts a finding at each
