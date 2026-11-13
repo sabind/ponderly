@@ -48,7 +48,8 @@ Drift is a point where the task cannot be done as described: the design does not
 ```
 status: done | stopped
 files changed:
-- <path>
+- `<path>`: <what changed; why, only when the code does not make it plain or you chose one way over another>
+- `<path>`, `<path>`: <the same, for the same change made in each>
 checks run:
 - `<command>`: <result>
 ephemeral check:
@@ -56,11 +57,12 @@ ephemeral check:
 deleted: <"nothing", or the list below>
 - <full path passed to the delete command, file or folder>
 unsure:
+- `<path>`: <a point about that line's change, inferred or unverified>
 - <anything inferred or unverified, or "nothing">
 stopped because:
 <question or evidence; omitted when done>
 ```
 
-`checks run` holds every test command and ephemeral check you ran, each with the result you observed, and any manual check you did instead. When you ran no test and no ephemeral check, the `ephemeral check` field says why none applied. `deleted` lists every file and folder you deleted, your own folder included, each by the full path exactly as you passed it to the delete command; pass every delete command full paths, never a relative path or a variable, so the path you passed and the full path are the same. A folder deleted with its contents is listed as that folder; when you deleted nothing, it reads `deleted: nothing` on one line. State what you observed; anything inferred rather than seen is marked as inferred and listed under `unsure`, as is anything you noticed outside the task. Anything you quote, under `stopped because` or anywhere in the Summary, is copied exactly, so the launcher can find it by search.
+`checks run` holds every test command and ephemeral check you ran, each with the result you observed, and any manual check you did instead. When you ran no test and no ephemeral check, the `ephemeral check` field says why none applied. `deleted` lists every file and folder you deleted, your own folder included, each by the full path exactly as you passed it to the delete command; pass every delete command full paths, never a relative path or a variable, so the path you passed and the full path are the same. A folder deleted with its contents is listed as that folder; when you deleted nothing, it reads `deleted: nothing` on one line. State what you observed; anything inferred rather than seen is marked as inferred and listed under `unsure`, as is anything you noticed outside the task. Anything you quote, under `stopped because` or anywhere in the Summary, is copied exactly, so the launcher can find it by search. Every file you created, edited or removed, a removed repository file included, sits on exactly one line of `files changed`, and several paths share a line only for the same change made for the same reason; the reason says what changed, and adds why only when the code does not make it plain or you chose one way of doing it over another; a stopped Summary's partial edit begins its reason with `partial:`; when you changed no file, it reads `files changed: none`. An `unsure` item about the change of one `files changed` line begins with that line's backticked paths and a colon; every other `unsure` item stays as it is.
 
 The team rules are already in your context; if they are not, say so under `unsure`. The ones this procedure leans on: make the smallest change that does the job, add no dependency, framework or tool, and say what you are unsure of.

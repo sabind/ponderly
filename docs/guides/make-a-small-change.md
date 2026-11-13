@@ -122,7 +122,7 @@ sequenceDiagram
     A->>S: Executor_Route (Recommended)
     S->>E: request, context found, your additions, boundaries
     E->>E: make the change with its test, run the checks
-    E-->>S: Summary: status, files changed, checks run, ephemeral check, deleted, unsure, stopped because
+    E-->>S: Summary: status, files changed with each reason, checks run, ephemeral check, deleted, unsure, stopped because
     S-->>A: the Summary verbatim, then git status and the diff
     S->>R: handback
     R-->>A: hand-back: Problems, Done, Checks, Files, Next
@@ -147,14 +147,16 @@ says so before anything else. Next, if any check failed, the skill says so.
 Then it shows the Summary word for word. The Summary has these fields:
 
 - `status`: `done` or `stopped`.
-- `files changed`: every file it created or edited.
+- `files changed`: every file it created or edited, each with the reason it
+  touched it.
 - `checks run`: each command it ran, with the result it saw.
 - `ephemeral check`: the scratch check it ran and deleted, or why none
   applied.
 - `deleted`: the full path of every file and folder it deleted, or
   `nothing`.
 - `unsure`: anything it inferred rather than saw, and anything it noticed
-  outside the change.
+  outside the change. A point about one file's change is an `unsure` item
+  that begins with that file's path.
 - `stopped because`: when it stopped, the question or the evidence.
 
 ![The task-executor's Summary returns with status: done. It lists the five new files of the reads-back-without-ticket eval case, explains the prompt and its four regex graders, reports make validate passing and a scratch Node check of the patterns, gives the command to run the case, and lists what it is unsure of, including that the skill's own text in the run record could make the graders pass.](../images/small-change-summary.svg)
