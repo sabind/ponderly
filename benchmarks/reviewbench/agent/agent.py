@@ -58,7 +58,8 @@ FINDINGS_SHAPE = (
     '"message": string}], "not_reported": [{"file": string or null, '
     '"quote": string or null, "problem": string, '
     '"reason": "team-rule departure without cost", "unsettled lead", '
-    '"not anchored", "dropped by relaunched arm" or "change remark"}], '
+    '"not anchored", "dropped by relaunched arm", "change remark" or '
+    '"description remark"}], '
     '"read": {lens: [string]}}'
 )
 
