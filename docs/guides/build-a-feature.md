@@ -112,7 +112,10 @@ Then it states which wave it is at and which tasks are in it, and asks one
 round of questions: how often to hand back (after each task, after each
 wave, or only at the end), how to treat optional tests (ask, always or
 never), and, when you are on the default branch, whether to create a branch
-under the task's name. It changes no code until you answer.
+under the task's name. Whenever it asks any of these, it asks the effort
+for the run's executors and wave reviewers in the same round, with the level
+it proposes; when it asks none of them, it states the proposed effort and
+goes on. It changes no code until you answer.
 
 Then it works one wave at a time. Each task gets its own `task-executor`
 agent. When every executor has come back, one `wave-reviewer` agent reads
@@ -127,12 +130,12 @@ sequenceDiagram
     participant W as wave-reviewer
     S->>E1: task 1, its requirements and design excerpts
     S->>E2: task 2, its requirements and design excerpts
-    E1-->>S: Summary: status done, files changed, checks run, ephemeral check, deleted, unsure
-    E2-->>S: Summary: status done or stopped, files changed, checks run, ephemeral check, deleted, unsure, stopped because
+    E1-->>S: Summary: status done, files changed with each reason, checks run, ephemeral check, deleted, unsure
+    E2-->>S: Summary: status done or stopped, files changed with each reason, checks run, ephemeral check, deleted, unsure, stopped because
     S->>S: re-run each Summary's checks
-    S->>W: files the wave changed, the excerpts they implement
+    S->>W: files the wave changed, the excerpts they implement, the records
     W->>W: git diff and read the files
-    W-->>S: Findings: verdict, each problem with its severity
+    W-->>S: Findings: verdict, each problem with its severity, a records check per line
     opt a blocker or should-fix
         S->>E1: the finding to fix
         E1-->>S: Summary
@@ -186,8 +189,9 @@ The author picked **Reorder (Recommended)**.
 
 ![The wave 3 report opens with the stopped README task under Problems, then Done, Checks, Files and Next with two ways to fix the README's first screen; Claude asks which, with the options Reorder (Recommended) and Keep order, relax to 90, and the author picks Reorder (Recommended).](../images/feature-executor-answer.svg)
 
-The spec is yours. When an executor stops, you decide how the spec changes,
-and the run goes on from there.
+The spec is yours. A task that falls short on Haiku, a stop included, goes
+first to a new Sonnet executor without asking you. When an executor then
+stops, you decide how the spec changes, and the run goes on from there.
 
 ## 7. Optional: make the code readable and tighten the tests
 

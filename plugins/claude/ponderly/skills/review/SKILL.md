@@ -48,6 +48,8 @@ When the list of changed files is empty, say "no diff" with the base and head it
 
 Read `${CLAUDE_SKILL_DIR}/lenses.md`. If it is missing, say that the skill's `lenses.md` is missing, naming its path, and stop.
 
+Before the launch, state the effort for the arms and the reviewer, then go on without asking, since a stop would break headless runs. Take the level the request names. Otherwise propose `medium`, or `high` when the pull request's title or body names security, authentication or sign-in, money or payments, deleting or migrating data, or concurrency, or when the review has no context beyond the code: it runs outside the session that built the change, the branch has no spec under `.ponderly/specs/`, no issue is named, and the title, body and commit messages say little more than what changed. A review run in the session that built the change stays at `medium`. For `high`, name the criterion met and the cost: up to about a quarter more than at medium, about $0.28 more for the reviewer and about $0.08 more for each arm, in list prices, not what a subscription bills. These are a starting judgement, to be replaced once medium launches are measured. Pass `effort` on a launch only when the chosen level is not `medium`, and pass no `model`. When the Agent tool refuses a launch with an error that names `effort`, launch again without it and tell the author the chosen level could not be applied.
+
 Launch one arm per lens, all in one message so they run at the same time, each with the Agent tool as `subagent_type: ponderly:review-arm` and a prompt that holds:
 
 - the shared standard, quoted;
@@ -60,7 +62,7 @@ Nothing more, and never the diff: each arm runs `git diff` and reads the files i
 
 ## 4. Merge
 
-Read each arm's final text as an arm block. An arm **failed** when it did not return, when its text is not an arm block (a `lens:` line, a `findings:` list whose every entry has a `file`, integer `start_line` and `end_line`, a `severity` of `high`, `medium` or `low` and a `category` and `message`, then an `unsure:` list, then a `read:` list), or when its block has `findings: []` and an `unsure` entry beginning `review not done:`, since that arm did not review. Once every arm of the pass has returned, relaunch each failed arm once, all failed ones in one message, with the prompt it had, and read the relaunch's text by the same rule. An arm of this first pass that fails again is dropped: take none of its entries, and name its lens as failed; an arm of the second pass that fails again keeps its first-pass list instead, as step 6c says. Relaunching a failed arm is not the second pass. Every entry of the blocks that remain is a candidate.
+Read each arm's final text as an arm block. An arm **failed** when it did not return, when its text is not an arm block (a `lens:` line, a `findings:` list whose every entry has a `file`, integer `start_line` and `end_line`, a `severity` of `high`, `medium` or `low` and a `category` and `message`, then an `unsure:` list, then a `read:` list), or when its block has `findings: []` and an `unsure` entry beginning `review not done:`, since that arm did not review. Once every arm of the pass has returned, relaunch each failed arm once, all failed ones in one message, with the prompt it had and the effort step 3 chose, and read the relaunch's text by the same rule. An arm of this first pass that fails again is dropped: take none of its entries, and name its lens as failed; an arm of the second pass that fails again keeps its first-pass list instead, as step 6c says. Relaunching a failed arm is not the second pass. Every entry of the blocks that remain is a candidate.
 
 Then, in order:
 
@@ -91,7 +93,7 @@ With `--json`, write the interim findings object to the path with the Write tool
 
 ## 5. Wave review
 
-Launch the reviewer once, with the Agent tool as `subagent_type: ponderly:wave-reviewer` and a prompt that holds:
+Launch the reviewer once, with the Agent tool as `subagent_type: ponderly:wave-reviewer`, at the effort step 3 chose, and a prompt that holds:
 
 - the range in place of a file list: the base commit, and the head commit or the words "the working tree";
 - the sentence, verbatim, "These changes are a pull request reviewed for the review skill: judge style, structure, comments and tests against the repository's own bar, what its CLAUDE.md, AGENTS.md, .claude/rules/ files and contributing guide say and the code around the change already does, and list a team-rule departure with no concrete cost in this change under unsure, not as a finding, unless it also departs from that bar.";
@@ -119,7 +121,7 @@ A **budget note** is any line of the form `USD budget: $<spent>/$<cap>; $<remain
 
 ### 6c. Second pass
 
-When the budget allows and at least one finding of the merged list is contradicted, launch again the arms of those findings' lenses, and no other, all in one message, each with the prompt of step 3 and, added to it:
+When the budget allows and at least one finding of the merged list is contradicted, launch again the arms of those findings' lenses, and no other, all in one message, each with the prompt of step 3, at the effort step 3 chose, and, added to it:
 
 - the reviewer's Findings block, quoted whole, with the sentence, verbatim, "Leave alone every unsure entry of these Findings that begins `departure not reported:`; it is not a finding, so neither anchor it nor keep it.";
 - the whole merged list from step 4, quoted in the arm block's shape, from which the arm takes as its own the entries whose category its lens carries.

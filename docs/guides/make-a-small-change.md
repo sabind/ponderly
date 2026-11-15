@@ -61,8 +61,10 @@ why:
   and tasks first.
 
 The reason is two or three sentences that name the code it read. The
-statement also names the task and a proposed branch. The skill does not
-create the branch.
+statement also names the task and a proposed branch. On the executor
+route it also names the model the executor is launched on, Haiku or Sonnet,
+and the effort it proposes. You can change the effort in your answer to the
+route question. The skill does not create the branch.
 
 The example's route statement was shown in the session but is not in the
 saved transcript, so there is no image of it. Read it and check that the
@@ -122,7 +124,7 @@ sequenceDiagram
     A->>S: Executor_Route (Recommended)
     S->>E: request, context found, your additions, boundaries
     E->>E: make the change with its test, run the checks
-    E-->>S: Summary: status, files changed, checks run, ephemeral check, deleted, unsure, stopped because
+    E-->>S: Summary: status, files changed with each reason, checks run, ephemeral check, deleted, unsure, stopped because
     S-->>A: the Summary verbatim, then git status and the diff
     S->>R: handback
     R-->>A: hand-back: Problems, Done, Checks, Files, Next
@@ -143,18 +145,22 @@ not the executor, not the skill.
 When the executor finishes, the skill first checks what it deleted. If the
 `deleted` field names anything other than the executor's own folder, a path
 inside it or one of its changed files, or the field is missing, the skill
-says so before anything else. Next, if any check failed, the skill says so.
+says so before anything else. Next, if any check failed, the skill says so;
+when the executor ran on Haiku, it first launches one new executor on Sonnet
+without asking you, and what follows is that executor's Summary.
 Then it shows the Summary word for word. The Summary has these fields:
 
 - `status`: `done` or `stopped`.
-- `files changed`: every file it created or edited.
+- `files changed`: every file it created or edited, each with the reason it
+  touched it.
 - `checks run`: each command it ran, with the result it saw.
 - `ephemeral check`: the scratch check it ran and deleted, or why none
   applied.
 - `deleted`: the full path of every file and folder it deleted, or
   `nothing`.
 - `unsure`: anything it inferred rather than saw, and anything it noticed
-  outside the change.
+  outside the change. A point about one file's change is an `unsure` item
+  that begins with that file's path.
 - `stopped because`: when it stopped, the question or the evidence.
 
 ![The task-executor's Summary returns with status: done. It lists the five new files of the reads-back-without-ticket eval case, explains the prompt and its four regex graders, reports make validate passing and a scratch Node check of the patterns, gives the command to run the case, and lists what it is unsure of, including that the skill's own text in the run record could make the graders pass.](../images/small-change-summary.svg)
@@ -181,9 +187,14 @@ need a new dependency, framework or tool. Its Summary then has
 `status: stopped` and a `stopped because` field with the question you must
 answer. The example did not stop, so there is no image of this.
 
-The skill shows the Summary and any partial edits, and says those edits are
-in your working tree. Then it asks, with the header `Relaunch` and two
-options:
+When the executor ran on Haiku, the skill does not ask you yet. It launches
+one new executor on Sonnet without asking, gives it the Haiku Summary's
+`stopped because` and the files that hold partial edits, and goes on with
+the Summary that executor returns.
+
+When a Sonnet executor has stopped, the skill shows the Summary and any
+partial edits, and says those edits are in your working tree. Then it asks,
+with the header `Relaunch` and two options:
 
 - **Answer and relaunch**: answer the question under `stopped because`, and
   the skill launches the executor again with your answer.
@@ -191,8 +202,10 @@ options:
 
 A free-text answer counts as `Answer and relaunch`, with that text as the
 answer. If you pick `Answer and relaunch` with no text, the skill asks you
-for the answer in prose, once, before it relaunches. The skill never
-relaunches on its own.
+for the answer in prose, once, before it relaunches. The one relaunch the
+skill makes without asking is the Sonnet executor after an executor that ran
+on Haiku fell short, a stop included; otherwise it never relaunches on its
+own.
 
 ## 7. Read the hand-back
 

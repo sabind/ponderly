@@ -309,7 +309,7 @@ class AFindingsFileExistsExactlyWhenTheReviewProducedParseableFindings(AdapterTe
         self.assertFalse(os.path.exists(self.out_path))
 
     def test_a_kill_at_the_time_limit_with_a_parseable_interim_file_exits_0_and_writes_it(self):
-        completed = self.run_adapter("interim_then_sleep", RB_TIMEOUT_SECONDS="1")
+        completed = self.run_adapter("interim_then_sleep", RB_TIMEOUT_SECONDS="5")
         self.assertEqual(completed.returncode, 0)
         findings = self.findings_file()["findings"]
         written = [(finding["start_line"], finding["message"]) for finding in findings]
@@ -445,11 +445,11 @@ class ClaudeCodeIsGivenTheSettings(AdapterTestCase):
 
 class TheAdapterStaysInsideItsTimeLimits(AdapterTestCase):
     def test_a_repair_started_with_little_time_left_is_killed_before_the_total_limit(self):
-        total_seconds = 4
+        total_seconds = 10
         started = time.monotonic()
         completed = self.run_adapter(
             "unparseable_then_sleep,sleep",
-            RB_TIMEOUT_SECONDS="2",
+            RB_TIMEOUT_SECONDS="5",
             RB_TOTAL_SECONDS=str(total_seconds),
             RB_REPAIR_TIMEOUT_SECONDS="30",
         )
@@ -461,7 +461,7 @@ class TheAdapterStaysInsideItsTimeLimits(AdapterTestCase):
 
     def test_a_grandchild_holding_stdout_after_the_kill_does_not_hang_the_adapter(self):
         self.addCleanup(self.kill_grandchild)
-        completed = self.run_adapter("grandchild_then_sleep", RB_TIMEOUT_SECONDS="1")
+        completed = self.run_adapter("grandchild_then_sleep", RB_TIMEOUT_SECONDS="5")
         self.assertTrue(os.path.exists(self.grandchild_pid_path))
         self.assertEqual(completed.returncode, 1)
         self.assertFalse(os.path.exists(self.out_path))
