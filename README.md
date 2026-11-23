@@ -55,7 +55,11 @@ flowchart LR
 ```
 
 [The Reference](docs/reference.md) describes each skill and agent, including
-`report`, which writes hand-backs like the one above.
+`report`, which writes hand-backs like the one above, and `switch-task`,
+which six skills (`strategy`, `hld`, `lld`, `start-task`, `implement-spec` and
+`bugfix`) use to show the `/compact` line (or `/clear` for unrelated work with nothing to carry) and the next command when the next
+task is a different one and the session is large enough for compacting to pay (110,000 tokens before `implement-spec`, 150,000 otherwise; below that it only names the next command); `readable-code` and `tighten-tests` are covered by
+its offer.
 
 ## When to use it
 

@@ -172,8 +172,9 @@ results, the files changed, and the next step.
 The hand-back is the text of the skill's last question, with the header
 `Pull request`. Its options are:
 
-- **Open it now (Recommended)**: the skill hands the fix to the `pr` skill,
-  with the ticket as its argument.
+- **Open the pull request next (Recommended)**: the skill ends the turn with
+  the switch message: the `/compact` line to copy, then
+  `/ponderly:pr <ticket>` to run. The pull request is not opened in that turn.
 - **Stop and comment on the ticket**: the skill posts the root cause, fix,
   prevention and verification as a comment on the ticket, and stops. It
   offers this only when it read the ticket with `gh`.
@@ -190,8 +191,10 @@ hand-back's Next said to open one pull request for both with
 
 ## 7. Open the pull request
 
-If you picked `Open it now`, the `pr` skill starts on its own. Otherwise run
-it yourself with the ticket:
+If you picked `Open the pull request next`, paste the `/compact` line, then
+the command it shows. In a small session, under 150,000 tokens,
+you see one line saying compacting is not worth it yet, then the command, and
+no `/compact` line. Otherwise run it yourself with the ticket:
 
 ```
 /ponderly:pr #12

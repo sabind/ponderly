@@ -18,6 +18,7 @@ its name. The plugin's files live under `plugins/claude/ponderly/`.
   - [review](#review)
   - [pr](#pr)
   - [report](#report)
+  - [switch-task](#switch-task)
 - [Agents](#agents)
   - [task-executor](#task-executor)
   - [wave-reviewer](#wave-reviewer)
@@ -36,6 +37,7 @@ its name. The plugin's files live under `plugins/claude/ponderly/`.
   - [load-rules-subagent.sh](#load-rules-subagentsh)
   - [remind-rules.sh](#remind-rulessh)
   - [remind-message.sh](#remind-messagesh)
+  - [switch-size.sh](#switch-sizesh)
 - [Tune the plugin for a repository](#tune-the-plugin-for-a-repository)
 - [What the plugin runs and sends](#what-the-plugin-runs-and-sends)
 
@@ -77,7 +79,8 @@ The front door for any request to change code.
   the next. On the executor route, the executor writes the code; you see its
   Summary and the diff. The skill itself writes no code.
 - **Hands off to:** `bugfix` on the bug route; `pr` after a `done`
-  Summary; `implement-spec` once `tasks.md` is approved. It proposes a branch
+  Summary; `implement-spec` once `tasks.md` is approved, each through
+  `switch-task`. It proposes a branch
   name but never creates the branch.
 
 ### strategy
@@ -98,7 +101,8 @@ Writes a tech strategy: about a year of work across one or more projects.
   The `document-reviewer` agent reads the draft for up to two rounds before
   you see it. You see the path and a summary, open findings first. It writes
   no code.
-- **Hands off to:** `hld`, once for each candidate high level design. The
+- **Hands off to:** `hld`, through `switch-task`, once for each candidate
+  high level design. The
   strategy ends with those candidates, one per stream of work.
 
 ### hld
@@ -126,8 +130,8 @@ strategy names.
   the components. The `document-reviewer` agent reads the draft against the
   template and the strategy for up to two rounds. You see the path and a
   summary, open findings first. It writes no code.
-- **Hands off to:** `lld`, once for each candidate low level design, one per
-  component.
+- **Hands off to:** `lld`, through `switch-task`, once for each candidate
+  low level design, one per component.
 
 ### lld
 
@@ -156,7 +160,8 @@ level design names, down to its tasks.
   The `document-reviewer` agent reads the draft against the template and the
   high level design for up to two rounds. You see the path and a summary,
   open findings first. It writes no code.
-- **Hands off to:** `start-task`, once for each task. The design ends with
+- **Hands off to:** `start-task`, through `switch-task`, once for each task.
+  The design ends with
   its tasks, each sized for one run of `start-task`.
 
 ### implement-spec
@@ -190,7 +195,8 @@ Builds a task from its approved spec, wave by wave.
   in hand is listed with its size and the choice between a task and an issue.
   It never edits the spec beyond its checkboxes without your approval.
 - **Hands off to:** `pr` when every non-optional task is ticked;
-  `start-task` when there is no spec or no `tasks.md`.
+  `start-task` when there is no spec or no `tasks.md`; both through
+  `switch-task`.
 
 ### bugfix
 
@@ -210,8 +216,8 @@ Fixes a bug the disciplined way, starting from a ticket.
   steps, evidence and hypotheses in the conversation, then fixes the cause
   with a regression test and checks nothing else broke. On request, it
   comments its findings on the ticket. It does not branch, commit or push.
-- **Hands off to:** `pr` on `Open it now`, with the ticket as its argument.
-  Or it stops, with or without a comment on the ticket, and tells you
+- **Hands off to:** `pr` on `Open the pull request next`, through
+  `switch-task`, with the ticket in the command. Or it stops, with or without a comment on the ticket, and tells you
   `/ponderly:pr <ticket>`.
 
 ### readable-code
@@ -492,6 +498,91 @@ ask what is going on or why.
   [Tune the plugin for a repository](#tune-the-plugin-for-a-repository). It
   edits no file and launches no agent.
 - **Hands off to:** nothing.
+
+### switch-task
+
+Ends a task so the next one starts from a short summary, not from the whole
+earlier conversation.
+
+- **Command:** `/ponderly:switch-task [next step] [carry: what to keep]`.
+  Both are optional. Six skills end by running it for you in place of naming
+  the next command themselves: `strategy`, `hld`, `lld`, `start-task`,
+  `implement-spec` and `bugfix`. `readable-code` and `tighten-tests` do not;
+  the offer covers them. It is offered once, in one sentence, when you ask
+  for work unrelated to the task the session holds, or start a skill by hand
+  in a session that holds an earlier task's work and no switch message was
+  shown for that step, before that work starts. It is offered only when the
+  session holds substantial work: a skill run to its end, several files read
+  or changed, sub-agents or long command output, or a long exchange. After a
+  short exchange, such as a question answered, one file read or one small edit, there is no
+  offer and the work starts.
+- **When it applies:** a task is done and the next one is a different task,
+  so the next skill would otherwise re-read everything the finished one read
+  and said, on every turn.
+- **What it asks:** nothing once the next step is known, and no question
+  before a switch with several candidate next steps; it lists them all. With
+  no next step in the arguments and none in your last request, it asks what
+  the next step is.
+- **What happens at a switch:** it writes one line in plain sentences, in
+  this shape:
+
+  ```
+  /compact We just finished <the work, in a few words>. Next we <what the next task does>, which reads <paths>. Keep <the decisions the next task must follow, and the problems still open>. Drop the detail of the finished work.
+  ```
+
+  The Keep sentence is left out when there is nothing to keep, and the last
+  sentence never is. It ends the turn with a message holding
+  the `/compact ...` line, at most 600 characters, and then the command that
+  starts the next task under "Then run:", or each candidate under "Then run
+  one of:". You paste the first, Claude Code compacts the session on it, and
+  you paste a command. You can skip the compaction and run the next step as it is.
+  When the switch is yours, in your own words, the new request is unrelated
+  to the work the session holds, and nothing from that work needs carrying,
+  the message shows `/clear` on a line of its own in place of the `/compact`
+  line. It says the next task starts fresh and that `/resume` brings the
+  earlier conversation back, and the request follows under "Then run:". When
+  that is in doubt, it shows the `/compact` line. The hand-off at the end of a
+  skill always shows the `/compact` line.
+  Claude Code takes `/compact` instructions as a focus for the summary, so
+  the line steers the summary and does not replace it; the next skill reads
+  its own files.
+- **When the switch is declined:** the hook
+  [switch-size.sh](#switch-sizesh) declines the call when the session is
+  small: under 110,000 tokens when the only next step starts
+  `/ponderly:implement-spec`, because that skill runs for many more requests
+  and a compaction pays back sooner, and under 150,000 otherwise. The session
+  then writes no switch message. It tells you in one line, "This session holds
+  about 61000 tokens, under the 150000 at which compacting pays before this
+  step, so it is not worth it yet. Next:", and names each next command on a
+  line of its own, then "To switch anyway, type /ponderly:switch-task first
+  in your message." You run a command, or one of them when there are several. When the next step is your own request, after a yes to the
+  offer, Claude says the one line, ending "so it is not worth it yet." with no
+  "Next:", then "To switch anyway, type /ponderly:switch-task first in your
+  message." on its own line, and starts that work. When the hook cannot read the size, the switch is made as
+  usual and the message does not state it. When you type
+  `/ponderly:switch-task` yourself the hook does not run, and the switch is
+  made whatever the size, with no size in the message. When the hook lets
+  the switch run because the session is at or above the limit, the message
+  states the size.
+- **What it writes:** the message only. Its one hook is
+  [switch-size.sh](#switch-sizesh); the skill adds no script, runs no
+  command, saves no file and types nothing for you.
+- **Claude Code documentation:** `/compact [instructions]` is your command,
+  and it takes optional focus instructions for the summary, in the `/compact`
+  row of the
+  [commands page](https://code.claude.com/docs/en/commands) (read on 19
+  November 2026). No documented event lets a skill or hook start a
+  compaction, which is why the skill shows the command and does not run it.
+- **Other sources for the order of the line:** Anthropic's
+  [context engineering post](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+  says a compaction prompt should capture everything relevant and then cut
+  what is superfluous, and names decisions and unresolved bugs as what to
+  keep; Factory's
+  [comparison of summarizers](https://factory.com/news/evaluating-compression)
+  (a vendor's own study) found named sections keep more than free prose;
+  Amp's [hand-off](https://ampcode.com/news/handoff) started from the goal of
+  the next piece of work and the files it needs.
+- **Hands off to:** the next step it shows.
 
 ## Agents
 
@@ -836,9 +927,10 @@ write to you.
 ## Hooks
 
 Claude Code does not load a `CLAUDE.md` or a `rules/` folder from a plugin by
-itself. So `plugins/claude/ponderly/hooks/hooks.json` registers four scripts, each
+itself. So `plugins/claude/ponderly/hooks/hooks.json` registers five scripts, each
 described below. The first two load the rules when a session or a sub-agent
-starts; the other two remind Claude of them as it works.
+starts; the next two remind Claude of them as it works; the fifth,
+`switch-size.sh`, declines a task switch in a small session.
 
 Keep the combined rules under 10,000 characters; past that, Claude Code
 replaces a hook's output with a file path and a 2,000-character preview, so
@@ -901,6 +993,22 @@ or when a rule goes over its own limit: 1,600 characters for `collaboration`,
   > author", loaded at session start, are already in your context and apply to
   > your reply. The one most often missed: "Lay out a problem, an explanation
   > or a decision as the person it changes will live it."
+
+### switch-size.sh
+
+- **Event:** `PreToolUse`, before each `Skill` call (matcher `Skill`). It acts
+  only on a call to `ponderly:switch-task`.
+- **What it does:** reads the size of the session, the input tokens of the
+  last request in the main conversation, from the session's transcript. When
+  the size is above zero and under the limit, it declines the call and tells
+  the session the size, not to retry, and to tell you in one line and name
+  each next step. The limit is 110,000 tokens when the only next
+  step starts `/ponderly:implement-spec`, and 150,000 otherwise. At or above the limit it lets the call run and
+  gives the session the size, which the switch message then states. Straight
+  after a compaction it reads the size the compaction left. When the
+  size is zero, because the transcript cannot be read, it prints nothing and
+  the call runs. The hook does not run when you type `/ponderly:switch-task`
+  yourself. It saves no file and always exits 0.
 
 ## Tune the plugin for a repository
 
@@ -979,7 +1087,10 @@ touches. The skills write only the document under `.ponderly/`, and the
 agent writes nothing.
 
 The hooks read only the files under the plugin's `rules/` folder, the input
-Claude Code gives them and the record they write. `remind-rules.sh` writes
+Claude Code gives them, the record they write and, in one case, your
+session's transcript. `switch-size.sh` opens the transcript, at the path
+Claude Code gives it, only when `ponderly:switch-task` is invoked, takes one
+number from it, the size of the session, and sends and saves nothing. `remind-rules.sh` writes
 that record, one file of the rules each agent has been sent, as
 `state/<session_id>` under the plugin's folder
 (`${CLAUDE_PLUGIN_ROOT}/state/`). It empties that file on a

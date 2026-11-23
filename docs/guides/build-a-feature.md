@@ -76,7 +76,7 @@ two options. **Approved** moves on to the task list.
 Last it writes `tasks.md`: the tasks, grouped into waves that can run
 together. It asks a third time, with the same two options.
 
-![Claude asks whether the task list builds the design in an acceptable order, with the options Approved and Changes needed; the author picks Approved, and Claude says the spec is in .ponderly/specs/design-skills/ and the next step is /ponderly:implement-spec design-skills.](../images/feature-tasks-approval.svg)
+![Claude asks whether the task list builds the design in an acceptable order, with the options Approved and Changes needed; the author picks Approved, and Claude says the spec is in .ponderly/specs/design-skills/ and the next step is /ponderly:implement-spec design-skills (captured before the switch message shown below).](../images/feature-tasks-approval.svg)
 
 After **Approved**, it says where the spec is and what comes next:
 `/ponderly:implement-spec design-skills`. It also names two things to
@@ -88,6 +88,27 @@ offers it too. This example's worktree was detached at `origin/main`, not on
 file it now; the branch then becomes `<number>-design-skills`.
 
 The spec folder now holds `requirements.md`, `design.md` and `tasks.md`.
+
+Because building is a different task from writing the spec, `start-task` ends
+by running `switch-task` at this hand-off, which shows this message instead of
+only naming the next command:
+
+```
+This task is done and the next one is a different task. This session holds about 310,000 tokens. Compact first, so the next task does not re-read this one on every turn:
+
+/compact We just finished writing the spec for design-skills. Next we build it wave by wave, which reads .ponderly/specs/design-skills/. Keep the decision to build in the three waves the task list names. Drop the detail of the finished work.
+
+Then run:
+
+/ponderly:implement-spec design-skills
+
+You can skip the compaction and run the next step as it is.
+```
+
+In a small session, under 110,000 tokens before `implement-spec`, you see instead one line saying
+compacting is not worth it yet, then the command. Otherwise you paste the
+`/compact` line, then the command. Skipping the compaction is
+fine; `implement-spec` reads the spec files itself.
 
 ## 5. Build it wave by wave
 

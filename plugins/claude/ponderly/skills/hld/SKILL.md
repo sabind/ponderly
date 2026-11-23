@@ -23,7 +23,7 @@ Arguments, as the author gave them: $ARGUMENTS
 - **Stops.** The paste request in step 1, when the strategy's path cannot be read; the no-parent question in step 1, when no strategy path was given; the candidate question in step 1, when the author's words do not name one of the strategy's candidates; the overwrite-or-resume question in step 2, when the document's path exists; the approval of the document in step 6, after the draft and after each revision.
 - **How it asks.** With the AskUserQuestion tool, fixed options plus free text, at every stop. The questions of step 3 are the exception: ask them in prose, in one round, because the answers are the author's own words. The paste request of step 1 is prose too.
 - **Hand-backs.** The document as its path and a summary, and each revision as its path and what changed, as the Showing a document section says.
-- **Hand-offs.** `lld` for each candidate low level design, once the document is approved.
+- **Hand-offs.** `lld` for each candidate low level design, once the document is approved, through `ponderly:switch-task`.
 
 ## Showing a document
 
@@ -117,4 +117,4 @@ On `Changes needed`, read the file as it stands on disk first, since the author 
 
 ## 7. Hand off
 
-When the document is approved, tell the author its path, list the candidate low level designs from its Low level designs section by name, and say that `/ponderly:lld <path> <candidate>` writes each one. Then stop.
+When the document is approved, tell the author its path, then invoke the Skill tool with `skill: ponderly:switch-task` and `args:` the command for every candidate low level design from its Low level designs section, one per line, each as `/ponderly:lld <path> <candidate>` with that one filled in. If the Skill tool cannot find `ponderly:switch-task`, list the candidate low level designs from its Low level designs section by name, and say that `/ponderly:lld <path> <candidate>` writes each one. Then stop.

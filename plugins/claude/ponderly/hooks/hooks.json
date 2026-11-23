@@ -35,6 +35,17 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/switch-size.sh\""
+          }
+        ]
+      }
+    ],
     "SessionEnd": [
       {
         "hooks": [

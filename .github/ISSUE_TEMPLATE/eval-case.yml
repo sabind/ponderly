@@ -25,6 +25,7 @@ body:
         - pr (skill)
         - bugfix (skill)
         - report (skill)
+        - switch-task (skill)
         - strategy (skill)
         - hld (skill)
         - lld (skill)
@@ -42,6 +43,7 @@ body:
         - workflow (rule)
         - tests (rule)
         - PostToolUse hook
+        - PreToolUse hook
         - SessionEnd hook
         - SessionStart hook
         - SubagentStart hook
