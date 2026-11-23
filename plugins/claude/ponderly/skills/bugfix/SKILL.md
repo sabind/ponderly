@@ -19,7 +19,7 @@ Argument, the ticket and anything the author already knows, or a description, if
 - **Stops.** The paste request in step 1, when the ticket cannot be read; the request for a missing symptom or expected behaviour in step 1, when there is no ticket; the approach question in step 2, when the advance context names no lead; the manual reproduction steps in step 3, when the bug cannot be reproduced by a test or script; the request for missing conditions and the author's choice to waive reproduction in step 3, when the bug cannot be reproduced; the root-cause confirmation in step 4; the manual re-run in step 6, after a manual reproduction; the hand-off question in step 7.
 - **How it asks.** With the AskUserQuestion tool, fixed options plus free text, at the approach question, the root-cause confirmation and the hand-off question. The manual reproduction and the manual re-run are asked in prose, because the author reports what they saw in their own words, and so are the other stops, because their answers are the author's own words too.
 - **Hand-backs.** The running summary after each reproduction attempt and each hypothesis; the hand-back at the end, written by the `report` skill in handback mode and put to the author as the hand-off question's text.
-- **Hand-offs.** `report` for the hand-back; `pr` on `Open it now`, with the ticket as its argument when there is one; committing, branching and pushing are left to it, this skill does none of them. `Stop and comment on the ticket` and `Stop here` end the skill without a hand-off; the where-the-fix-sits line and `/ponderly:pr <ticket>` are said in the conversation at both.
+- **Hand-offs.** `report` for the hand-back; `pr` on `Open the pull request next`, through `ponderly:switch-task`, with the ticket in the command when there is one; committing, branching and pushing are left to it, this skill does none of them. `Stop and comment on the ticket` and `Stop here` end the skill without a hand-off; the where-the-fix-sits line and `/ponderly:pr <ticket>` are said in the conversation at both.
 
 ## 1. Read the ticket
 
@@ -176,7 +176,7 @@ Both stop outcomes below close in the conversation, to the author, with the wher
 
 Then ask with the AskUserQuestion tool, header `Pull request`, with the hand-back Message as the question's text, so the author reads problems first in the dialog before choosing, and these options in this order:
 
-- **Open it now (Recommended)**: hand the fix to the pr skill to open the pull request.
+- **Open the pull request next (Recommended)**: hand the fix to the pr skill to open the pull request.
 - **Stop and comment on the ticket**: leave the summary on the ticket and stop. Offer this option only when the ticket was read with `gh` in step 1; otherwise the question has only the other two.
 - **Stop here**: stop without posting anything.
 
@@ -184,13 +184,13 @@ If the dialog cannot carry the whole Message, put the Message as a prose message
 
 Read the answer:
 
-- `Open it now`, or a plain yes in free text, such as "yes" or "go ahead": once the hand-back Message has been put to the author, in the question or as prose, invoke the pr skill with the Skill tool, `skill: ponderly:pr`, with `args:` the ticket reference when there is one, otherwise empty. Do nothing else; the pr skill takes it from there.
-- Free text that asks for something about the pull request, such as "open it as a draft", counts as `Open it now`; leave the author's words in the conversation for the pr skill to read.
+- `Open the pull request next`, or a plain yes in free text, such as "yes" or "go ahead": once the hand-back Message has been put to the author, in the question or as prose, invoke the Skill tool with `skill: ponderly:switch-task` and `args: /ponderly:pr <ticket>`, or `/ponderly:pr` when there is no ticket; when the skill is missing, name that command as the next step. Do nothing else.
+- Free text that asks for something about the pull request, such as "open it as a draft", counts as `Open the pull request next`; pass the author's words on in the `switch-task` call, after `carry:` in `args:`, for the pr skill to read.
 - `Stop and comment on the ticket`: post a comment with `gh issue comment <ref> --body-file -`, where `<ref>` is the issue number, for a `#n` or an issue named in prose such as "issue 12", or the URL when a URL was given. Give the body with a quoted heredoc on the same command, so the command line starts with `gh issue comment`: `gh issue comment <ref> --body-file - <<'EOF'`, then the body, then `EOF`. Write the body for the ticket's reader, who has none of the author's local state: four parts under bold labels, **Root cause**, **Fix**, **Prevention** and **Verification**, taken from the hand-back's Problems, Done and Checks, anything unverified or waived going under Verification, with the Fix part stating the change itself, the file, the line and what changed, so a reader could make it. The comment carries none of the author's local state: no branch name, no word that the fix is uncommitted, and no next command for the reader to run; the changed file and line in the Fix part and the verification that was run stay. The comment is not routed through the report skill. If the command fails, show the error verbatim and say the hand-back is in the conversation. Then close in the conversation with the where-the-fix-sits line, followed by "`/ponderly:pr <ticket>` picks it up.", and end.
-- Free text such as "comment and open it", when the comment option was offered, does both: post the comment as above first, then make the Skill tool call as for `Open it now`.
+- Free text such as "comment and open it", when the comment option was offered, does both: post the comment as above first, then make the Skill tool call as for `Open the pull request next`.
 - `Stop here`: close with the where-the-fix-sits line, followed by "`/ponderly:pr <ticket>` picks it up." when there is a ticket, and post nothing.
 - Free text that names none of these: ask once more in prose which to take.
 
-If the Skill tool cannot find `ponderly:pr`, say that the plugin's pr skill is missing and stop. Do not draft or open the pull request another way.
+Do not draft or open the pull request another way.
 
 This skill never commits, creates a branch, pushes or creates a pull request; a bare `gh pr create` skips the walkthrough.

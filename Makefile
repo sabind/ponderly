@@ -98,6 +98,7 @@ eval-skill-start-task: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-strategy: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-hld: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-lld: CASE_ARGS += --allow-tools Write Edit --scaffold
+eval-skill-switch-task: CASE_ARGS += --allow-tools Write Edit --scaffold
 eval-skill-readable-code: CASE_ARGS += --allow-tools Bash Write Edit --scaffold
 eval-skill-readable-code: export PATH := bin:$(PATH)
 eval-skill-bugfix: CASE_ARGS += --allow-tools Bash Write Edit --scaffold

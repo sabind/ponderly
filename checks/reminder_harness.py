@@ -1,9 +1,9 @@
-"""Shared harness for the checks/test_reminder_*.py files.
+"""Shared harness for the checks/test_reminder_*.py and checks/test_switch_size.py files.
 
-Builds a temporary plugin folder holding copies of the reminder hook scripts and
+Builds a temporary plugin folder holding copies of the hook scripts and
 of rules/, runs a hook there with a JSON input on stdin, and reads back what it
 printed and what it recorded, so no test writes state/ inside the repository.
-Not a test file itself: make check does not run it, the reminder checks import it.
+Not a test file itself: make check does not run it, the hook checks import it.
 """
 
 import collections
@@ -14,13 +14,13 @@ import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN = os.path.join(ROOT, "plugins", "claude", "ponderly")
-HOOKS = ("remind-rules.sh", "remind-message.sh")
+HOOKS = ("remind-rules.sh", "remind-message.sh", "switch-size.sh")
 
 HookRun = collections.namedtuple("HookRun", "code context record")
 
 
 def make_plugin(folder, rules=None, with_rules=True):
-    """Fills folder with hooks/ copies of the reminder scripts and a rules/ folder; returns folder.
+    """Fills folder with hooks/ copies of the hook scripts and a rules/ folder; returns folder.
 
     rules is a mapping of rule name to text, written as rules/<name>.md; when it
     is None, rules/ is a copy of the plugin's real rules. with_rules False leaves
@@ -75,6 +75,24 @@ def run_hook(plugin, script, stdin, set_root=True):
         timeout=30,
     )
     return HookRun(run.returncode, _decode_context(run.stdout), _read_record(plugin, stdin))
+
+
+def run_hook_output(plugin, script, stdin):
+    """Runs hooks/<script> of the plugin folder with stdin and returns the exit code and the printed JSON object.
+
+    The object is None when the hook printed nothing. Unlike run_hook it does
+    not narrow the output to additionalContext, so a deny decision can be read.
+    """
+    run = subprocess.run(
+        [os.path.join(plugin, "hooks", script)],
+        input=stdin.encode("utf-8"),
+        capture_output=True,
+        env=dict(os.environ, CLAUDE_PLUGIN_ROOT=plugin),
+        timeout=30,
+    )
+    if not run.stdout:
+        return run.returncode, None
+    return run.returncode, json.loads(run.stdout.decode("utf-8"))
 
 
 def hook_input(event, session_id="session-1", cwd=None, tool_name=None, file_path=None,

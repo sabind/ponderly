@@ -166,7 +166,7 @@ the worked example.
   runs, so a `tool_used` grader on `Skill` never fires for it; grade the
   behaviour instead. A Skill call the model makes later, to another skill, is
   still seen by a `tool_used` grader, which is how the bugfix hand-off case
-  grades its call to `ponderly:pr`. A prompt that merely describes the work does trigger the
+  grades its call to `ponderly:switch-task` with `/ponderly:pr #7`. A prompt that merely describes the work does trigger the
   Skill tool, which is what the workflow-rule cases grade.
 
 ## Writing a case

@@ -142,7 +142,7 @@ and said the high level designs would run into them. Then it named the
 three candidate high level designs, `platform-move`,
 `identity-and-ownership` and `adoption`, and said
 `/ponderly:hld .ponderly/strategies/linkshort-2027.md <candidate>` writes
-each one.
+each one. That step ends with the switch message: the `/compact` line to copy, then each command under "Then run one of:". In a small session, under 150,000 tokens, you see one line saying compacting is not worth it yet, then each command.
 
 Approving with findings open is allowed, but they do not go away. To settle
 them now, pick **Changes needed** and answer them in the free text. In this
@@ -223,7 +223,7 @@ low level designs would have to settle them, named the three candidate low
 level designs, `linkshort-service`, `link-stores-and-migration` and
 `kubernetes-deployment`, and said
 `/ponderly:lld .ponderly/designs/linkshort-2027/platform-move/hld-platform-move.md <candidate>`
-writes each one.
+writes each one. That step ends with the switch message: the `/compact` line to copy, then each command under "Then run one of:". In a small session, under 150,000 tokens, you see one line saying compacting is not worth it yet, then each command.
 
 ## 6. Ask for a low level design
 
@@ -300,7 +300,7 @@ rollback, compare timing, driver and risks. The first four named the task
 each lands on, such as `cutover-steps`; driver and risks named no task.
 Then it listed the twelve tasks
 in order, from `store-interface` to `retirement`, and said
-`/ponderly:start-task <task>` starts each one.
+`/ponderly:start-task <task>` starts each one. The skill ends with the switch message: the `/compact` line to copy, then each command under "Then run one of:". In a small session, under 150,000 tokens, you see one line saying compacting is not worth it yet, then each command.
 
 ## What you have at the end
 

@@ -44,6 +44,7 @@ runs the one that fits.
 - `review`: when you want a pull request, a branch or a range of commits reviewed; it reads the change through each lens at once and returns findings anchored to lines, counts a moved or renamed file as touched in every line, and says how many touched files no arm read whole.
 - `pr`: when you want to open or update a pull request for the current branch.
 - `report`: when work comes back, a decision is open, or you ask for status or why something happened; the session usually runs it for you.
+- `switch-task`: when a skill finishes and the next task is a different one; it shows the `/compact` line to copy, with what to keep (or `/clear` in its place for unrelated work with nothing to carry), and then the command that starts the next task, only when the session is at or above the size where a compaction pays (110,000 tokens before `implement-spec`, 150,000 otherwise), else it says compacting is not worth it yet and names the next command. `strategy`, `hld`, `lld`, `start-task`, `implement-spec` and `bugfix` run it for you; `readable-code` and `tighten-tests` are covered by its offer.
 
 Each skill's arguments, questions and outputs are in the Reference's [Skills](https://github.com/sabind/ponderly/blob/main/docs/reference.md#skills) section.
 
