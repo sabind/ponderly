@@ -357,10 +357,14 @@ findings, each anchored to lines at the head.
   needs its own edit, in whatever file it is, each naming the others; when an
   edit at either of two places alone would fix it, the arm puts one at the
   place the pull request changed, at each when it changed both, or next to the
-  removal when it changed neither. The skill merges what the arms return: it
-  drops a finding whose file or lines do not exist at the head, collapses
-  duplicates and orders high, medium, low. No merge drops a verified finding
-  for its severity or the list's length.
+  removal when it changed neither. The arms also read the repository's rule
+  files, its `CLAUDE.md`, `AGENTS.md`, `.claude/rules/` files and contributing
+  guide, and report each break of a rule that their lens covers as a finding
+  that quotes the rule. Each finding's message is what is wrong, the fix, and
+  why it matters to the user, operator or owner. The skill merges what the
+  arms return: it drops a finding whose file or lines do not exist at the
+  head, collapses duplicates and orders high, medium, low. No merge drops a
+  verified finding for its severity or the list's length.
   `--duplicates` sets how duplicates collapse: `same-defect`, the default,
   merges two findings in one file only when they name the same defect and the
   same fix, keeping the fuller message with its own lines, and never merges
@@ -413,21 +417,29 @@ findings, each anchored to lines at the head.
   wave review left out as `departures not reported`, and whether the budget
   stopped the second pass;
   after it, one line for each remark an arm made about the change as a
-  whole, which is never a finding.
+  whole, which is never a finding, then one `description remark:` line for
+  each note the documentation arm made on the pull request's title and body,
+  which is never a finding either; when no title and body are given, there
+  are no such lines, here or in the JSON file. The arm reads the title and
+  body against the repository's rule files and pull request template and,
+  where they say nothing, the team rule on laying a thing out as the person
+  it changes will live it. A line break in a message or remark prints
+  as a space.
   With `--json <path>`, it writes the same findings and counts as JSON to
   that path, which must be outside the repository or ignored by it, and
-  replies with the path, the count line and the remark lines; the counts
-  include `folded`, `not_anchored`, `relaunched` and `files_unread`, the
-  count line's touched files no arm read. A `read` object maps each lens
-  whose arm the merge took to the list of files that arm read, across both
-  passes for an arm run again. Beside the findings, the JSON file holds a
-  `not_reported` list of what the review left out, each entry with its file,
-  quote, problem and the reason: a team-rule departure without cost, a lead
-  the wave review left unsettled, a wave-review finding that could not be
+  replies with the path, the count line, the remark lines and the description
+  remark lines; the counts include `folded`, `not_anchored`, `relaunched` and
+  `files_unread`, the count line's touched files no arm read. A `read` object
+  maps each lens whose arm the merge took to the list of files that arm read,
+  across both passes for an arm run again. Beside the findings, the JSON file
+  holds a `not_reported` list of what the review left out, each entry with its
+  file, quote, problem and the reason: a team-rule departure without cost, a
+  lead the wave review left unsettled, a wave-review finding that could not be
   anchored, one a relaunched arm dropped, or an arm's remark about the change
-  as a whole, with reason `change remark`. It changes no tracked file in the
-  repository and commits nothing; the one file it writes is the `--json` file,
-  outside the repository or ignored by it.
+  as a whole, with reason `change remark`, or an arm's note on the title and
+  body, with a null file and reason `description remark`. It changes no
+  tracked file in the repository and commits nothing; the one file it writes
+  is the `--json` file, outside the repository or ignored by it.
 - **Hands off to:** nothing; you decide what to do with the findings.
 
 ### pr
@@ -681,10 +693,13 @@ nothing.
   well as the team rules. A team-rule departure with no concrete cost in the
   change is not a finding: it leaves it out and lists it under `unsure` as a
   departure not reported. A departure from the repository's own bar with no
-  concrete cost is still a `nit`. A departure with a concrete cost
+  concrete cost is still a `nit`, unless the sentence it breaks implies a
+  graver severity. A departure with a concrete cost
   gets the severity that cost would get if no team rule were named, so
-  breaking the team rule does not by itself make it a `blocker`. Every other
-  launch holds the changes to the team rules alone.
+  breaking the team rule does not by itself make it a `blocker`. In this
+  launch each problem also carries the case for the user, operator or owner,
+  in up to three sentences. Every other launch holds the changes to the team
+  rules alone.
 - **What it returns:** Findings: a `verdict` (`holds` or `findings`), the
   `base` commit the diffs were measured against, then each problem with its
   `file`, an exact `quote`, the `problem` and a `severity` (`blocker`,
@@ -730,11 +745,14 @@ It gathers the diff itself, in one `git diff` over every changed file,
 verifies each problem against the code at the head, and changes nothing. Its
 bar for style, structure, comments and tests is the repository's own: what its `CLAUDE.md`, `AGENTS.md`, files under
 `.claude/rules/` and contributing guide say and the code around the change
-already does, not the handbook rules; a departure from a rule is a finding
-only when it costs the change something concrete. It puts a finding at each
-place a defect needs its own edit, sweeps the other changed files and the call
-sites it read for copies of a defect it verified that comes from a pattern,
-and reads a function or endpoint the change newly depends on from its
+already does, not the handbook rules. In step 2 it reads those files not
+already in its context, and a rule file with `paths:` front matter governs
+only the changed files that match. A break of a rule's sentence that its lens
+covers is a finding quoting the sentence, at the severity its cost gives, or
+`low` when it shows none, unless the sentence implies more. It puts a finding
+at each place a defect needs its own edit, sweeps the other changed files and
+the call sites it read for copies of a defect it verified that comes from a
+pattern, and reads a function or endpoint the change newly depends on from its
 signature through every guard before the branch the change uses. It reads
 every changed file whole, a moved file included. When a problem rests on
 what a tool, library or service outside the repository does and the
@@ -767,10 +785,13 @@ about the change as a whole goes under `unsure`, never into a finding.
 - **What it returns:** an arm block: the `lens`, then each finding with its
   `file`, a `start_line` and `end_line` at the head, a `severity` (`high`,
   `medium` or `low`), a `category` its lens carries and a one-line
-  `message` saying what is wrong, why it matters and what would fix it; then
-  what it is `unsure` of, where each problem it noticed outside its lens is an
-  entry that begins `outside lens:` and names its file and line, and a remark
-  about the change as a whole is an entry that begins `change remark:`; then
+  `message` saying what is wrong, the fix, and then the case for the user,
+  operator or owner: how they meet the problem, what the fix changes for them
+  and what suffers most if nothing changes; then what it is `unsure` of,
+  where each problem it noticed outside its lens is an entry that begins
+  `outside lens:` and names its file and line, a remark about the change as a
+  whole is an entry that begins `change remark:`, and a note on the title and
+  body is an entry that begins `description remark:`; then
   `read`, every file it read, one entry per file, as `<path>: whole` or
   `<path>: <start>-<end>` with further ranges after `, `, or `read: []`.
 
