@@ -1,18 +1,21 @@
 title: ponderly — start-task
-date: 2026-10-20
-plugin: ponderly v1.1.0
-source: sabind/ponderly, session 8a0ad5ce-6a20-40f3-9dae-e4e4d8c3519a
-alt: Claude asks whether the task list builds the design in an acceptable order, with the options Approved and Changes needed; the author picks Approved, and Claude says the spec is in .ponderly/specs/design-skills/ and the next step is /ponderly:implement-spec design-skills.
+date: 2026-11-24
+plugin: ponderly 1.10.0
+source: sabind/ponderly, session a32ad073-f314-496f-bf04-dcb9cf42483c
+alt: Claude asks whether the task list builds the design in an acceptable order, with the options Approved and Changes needed; the author picks Approved, and the switch-task skill ends the turn with the switch message: the session holds about 149000 tokens, a /compact line that says what was finished, what comes next and what to keep, then /ponderly:implement-spec switch-task-eval-gaps to run, and a line that the compaction can be skipped.
 
-⏺ AskUserQuestion(questions: [{"question": "Do these tasks build the design in an order you accept?", "header": "Approve", "options": [{"label": "Approved", "description": "The task list stands as written; implement-spec builds it from wave 0."}, {"label": "Changes needed", "description": "Say what is missing or wrong in the free text and I will revise."}], "multiSelect": false}])
+⏺ AskUserQuestion(questions: [{"question": "Do the tasks in .ponderly/specs/switch-task-eval-gaps/tasks.md build the design in an order you accept? Put anything missing or wrong in the free text.", "header": "Approve", "multiSelect": false, "options": [{"label": "Approved", "description": "The seven tasks and their four waves are right; hand off to implement-spec."}, {"label": "Changes needed", "description": "Something is missing or wrong; say what in the free text."}]}])
 
-  Your questions have been answered: "Do these tasks build the design in an order you accept?"="Approved". You can now continue with these answers in mind.
+  Your questions have been answered: "Do the tasks in .ponderly/specs/switch-task-eval-gaps/tasks.md build the design in an order you accept? Put anything missing or wrong in the free text."="Approved". You can now continue with these answers in mind.
 
-● The spec is approved and its three files are in `.ponderly/specs/design-skills/`: `requirements.md`, `design.md` and `tasks.md`.
+⏺ Skill(skill: ponderly:switch-task, args: /ponderly:implement-spec switch-task-eval-gaps)
 
-  Next step: run `/ponderly:implement-spec design-skills`. It starts at wave 0, the six tasks that put the templates, the reviewer agent, the three skills and the issue-form entries on disk together, so `make validate` passes at the end of the wave. Wave 1 is the description clause, the README and version, the ten eval cases and the Makefile lines. Wave 2 is yours: the eval runs.
+● This task is done and the next one is a different task. This session holds about 149000 tokens. Compact first, so the next task does not re-read this one on every turn:
 
-  Two things before you start it:
+  /compact We just finished the spec for the switch-task eval gaps. Next we build it wave by wave with implement-spec, which reads .ponderly/specs/switch-task-eval-gaps/. Keep that the branch is switch-task-eval-gaps at main 0c059db with the three spec files uncommitted, that no paid eval case runs without the author's yes, task 5.1 included, and that the switch-task skill, the hooks and the merged compact-at-task-switch spec are not changed. Drop the detail of the finished work.
 
-  - **Branch.** This worktree is detached at origin/main, not on `main` by name, so implement-spec's set-up will not offer to create the branch. Create `design-skills` first with `git checkout -b design-skills`, or tell me and I will do it outside the skill.
-  - **Ticket.** The `pr` skill wants an issue. If you file one before the PR, the branch becomes `<number>-design-skills` and the pull request closes it on merge; I can draft the issue body from the requirements whenever you want.
+  Then run:
+
+  /ponderly:implement-spec switch-task-eval-gaps
+
+  You can skip the compaction and run the next step as it is.

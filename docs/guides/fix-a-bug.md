@@ -167,7 +167,7 @@ note that the record of the investigation stays in the conversation. Then the
 root cause, the fix, the prevention, the checks that were run with their
 results, the files changed, and the next step.
 
-![The bugfix skill hands back: Problems first, then Done with the root cause, the fix and the prevention, the checks that pass, the files changed, and Next, which says to open one pull request with /ponderly:pr #50.](../images/bugfix-handoff.svg)
+![The bugfix skill hands back: Problems first, then Done with the root cause, the fix and the regression test, the checks that pass, the files changed, and Next. It asks what comes next; the author picks Open the pull request next, and because the session holds about 97000 tokens, under the 150000 at which compacting pays, Claude names /ponderly:pr #111 as the next command and says how to switch anyway.](../images/bugfix-handoff.svg)
 
 The hand-back is the text of the skill's last question, with the header
 `Pull request`. Its options are:
@@ -184,10 +184,13 @@ At both stops it tells you which branch the uncommitted fix sits on and which
 files it is in, and, when there is a ticket, that `/ponderly:pr <ticket>`
 picks it up later.
 
-In the example there was no ticket, so the comment option was not offered.
-The fix sat on the branch of other work, `50-design-skills`, so the
-hand-back's Next said to open one pull request for both with
-`/ponderly:pr #50`. That pull request, #53, closed both #50 and #52.
+This one capture comes from a later fix on plugin 1.10.0, for issue #111; the
+rest of this guide follows the older example. There was a ticket, so the
+hand-back asked what comes next and the author picked
+`Open the pull request next`. The session held about 97,000 tokens, under the
+150,000 limit, so Claude named `/ponderly:pr #111` as the next command and
+said how to switch anyway: type `/ponderly:switch-task` first in your
+message.
 
 ## 7. Open the pull request
 

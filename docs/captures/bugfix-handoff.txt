@@ -1,37 +1,48 @@
 title: ponderly — bugfix
-date: 2026-10-22
-plugin: ponderly v1.1.0
-source: sabind/ponderly, session 8a0ad5ce-6a20-40f3-9dae-e4e4d8c3519a
-alt: The bugfix skill hands back: Problems first, then Done with the root cause, the fix and the prevention, the checks that pass, the files changed, and Next, which says to open one pull request with /ponderly:pr #50.
+date: 2026-11-24
+plugin: ponderly 1.10.0
+source: sabind/ponderly, session 37b1116f-8524-4cb0-be45-e6002a31eced
+alt: The bugfix skill hands back: Problems first, then Done with the root cause, the fix and the regression test, the checks that pass, the files changed, and Next. It asks what comes next; the author picks Open the pull request next, and because the session holds about 97000 tokens, under the 150000 at which compacting pays, Claude names /ponderly:pr #111 as the next command and says how to switch anyway.
 
 ● ## Problems
 
-  - **The `bugfix` change has no ticket.** The record of the investigation stays in this conversation. The change sits on branch `50-design-skills`, outside issue #50's scope, so the pull request should name it as a separate fix.
-  - **The new YAML check also rejects one shape YAML allows.** A plain value followed by a ` # comment` fails the check and has to be quoted. That is deliberate, because a stray ` #` silently truncated two values in `opens-pr-with-ticket`. No file in the repository uses a trailing comment today.
-  - **The guard against invented figures is still open.** The skills can fill a thin answer with a confident, made-up number, and nothing checks that each figure has a source. Options: add one sentence to the reviewer's procedure so it flags figures with no source, or have the skills label such figures as assumptions. You can also leave it with the reviewer tuning you chose to wait on.
-  - **The reviewer's strictness is carried.** You chose to leave it until real use, so it goes in the PR as a follow-up.
+  - You, as the owner, paid more than I told you: I said one run of the `/clear` eval case, and the harness runs each case three times. The four eval invocations cost $1.46 in total, where I had implied about $0.12. Nothing is left to spend; this is for your accounting.
+  - A user on the installed plugin still sees the old sentence: the plugin version is still 1.10.0, because I did not bump it. The fix reaches nobody until a version ships. Options: bump it in the pull request, or hold it for a release you choose.
+  - You may assume the ticket's own steps were re-run, and they were not: the fix is proved by the eval case, a typed command in a small sandbox session, not by `/ponderly:switch-task write me a packing list…` in a session holding substantial work. The skill text read is the same in both, so I expect the same result, which is inference. Options: accept the eval as proof, or try it in a [redacted] tab with `--plugin-dir`.
 
   ## Done
 
-  - **Root cause.** The workflow rule's eval target granted no Bash. The `bugfix` skill has run `gh issue view` while it loads since commit 1170121 on 2026-10-16. The `pr` skill runs `git` and `gh` while it loads. In that sandbox both loads failed with "Shell command permission check failed ... Permission to use Bash has been denied". The skill's text never reached the session. The routing graders passed on the Skill call alone, and only `states-symptom` noticed. Real users are not affected, because each skill's `allowed-tools` pre-approves those commands.
-  - **Fix.** The Makefile's `eval-rule-workflow` line now grants `--allow-tools Bash`, with the `bin` wrappers first on the PATH. `bug-routes-to-bugfix` and `pr-routes-to-pr-skill` each have a scaffold that builds the calc fixture with those wrappers.
-  - **Prevention.** Both routing cases carry a new `skill-loads` grader. It fails when the trace holds "Shell command permission check failed". The two kept traces from before the fix each hold that line once, so the grader would have failed them.
-  - **Task 11, the YAML frontmatter check (Requirements 9.3, 9.4).** `checks/test_frontmatter_yaml.py` covers every case prompt, grader, skill and agent frontmatter. It failed on each of seven planted faults and on both earlier broken files in their old form. A Ruby YAML parser accepts all 304 real files. It caught `opens-pr-with-ticket`, whose `expected_outcome` a stray ` #7` had cut down to "Claude reads ticket", and both values there are now quoted.
+  - **Root cause, as you confirmed:** step 3 of the `switch-task` skill built the `/clear` message by keeping everything from "Then run:" on, which carried the `/compact` form's closing sentence into it.
+  - **Fix:** the `/clear` form now has its own whole template in step 3, ending "You can skip the clear and run the next step as it is." The `/compact` template is untouched. A first attempt that only added an exception sentence made the model drop the closing sentence in 2 of 3 runs, so I replaced it with the full template.
+  - **Regression test:** a new grader on the `clears-for-unrelated-work` eval case expects that exact sentence. It failed 3 of 3 runs before the fix and passes 3 of 3 after, with the case's other six graders passing throughout.
+  - **Reference doc:** the `switch-task` section of `docs/reference.md` now says the `/clear` message ends by saying you can skip the clear.
+  - **Left alone on purpose:** `docs/guides/build-a-feature.md` quotes the old sentence in a `/compact` example, where it is right. The merged spec `compact-at-task-switch` is a record.
 
   ## Checks
 
-  - `make validate` passes: 26 tests and the three validators.
-  - `make eval-rule-workflow` scored 1.00 on all six cases at 3 of 3 each, for $3.54 against $2.50 before the fix.
+  - `make eval-skill-switch-task EVAL_ARGS="--case clears-for-unrelated-work"`: passes, 3 of 3 runs, all seven graders.
+  - `make eval-skill-switch-task EVAL_ARGS="--case writes-the-compact-line"`: passes, 3 of 3 runs, and all three replies still end "You can skip the compaction and run the next step as it is."
+  - `make validate`: passes.
+  - The other three `switch-task` cases, which test the offer and not the message, were not run.
 
   ## Files
 
-  - `Makefile`
-  - `evals/rules/workflow/bug-routes-to-bugfix/`
-  - `evals/rules/workflow/pr-routes-to-pr-skill/`
-  - `evals/skills/pr/opens-pr-with-ticket/prompt.md`
-  - `checks/test_frontmatter_yaml.py`
-  - `.ponderly/specs/design-skills/tasks.md`
+  - `plugins/claude/ponderly/skills/switch-task/SKILL.md`
+  - `evals/skills/switch-task/clears-for-unrelated-work/graders/says-the-clear-can-be-skipped.md`
+  - `docs/reference.md`
 
   ## Next
 
-  Every task in the spec is ticked. Nothing on `50-design-skills` is committed, so this fix and the whole branch go into one pull request with `/ponderly:pr #50`.
+  Choose how this leaves the session: open the pull request, comment on #111 and stop, or stop.
+
+⏺ AskUserQuestion(questions: [{"question": "The fix for #111 is verified by its eval case and uncommitted; the hand-back above lists three problems first (eval cost of $1.46, no version bump, the ticket's manual steps not re-run). What next?", "header": "Pull request", "multiSelect": false, "options": [{"label": "Open the pull request next (Recommended)", "description": "Hand the fix to the pr skill to open the pull request."}, {"label": "Stop and comment on the ticket", "description": "Leave the summary on #111 and stop."}, {"label": "Stop here", "description": "Stop without posting anything."}]}])
+
+  Your questions have been answered: "The fix for #111 is verified by its eval case and uncommitted; the hand-back above lists three problems first (eval cost of $1.46, no version bump, the ticket's manual steps not re-run). What next?"="Open the pull request next (Recommended)". You can now continue with these answers in mind.
+
+⏺ Skill(skill: ponderly:switch-task, args: /ponderly:pr #111)
+
+● This session holds about 97000 tokens, under the 150000 at which compacting pays before this step, so it is not worth it yet. Next:
+
+  /ponderly:pr #111
+
+  To switch anyway, type /ponderly:switch-task first in your message.
