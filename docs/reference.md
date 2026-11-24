@@ -540,7 +540,8 @@ earlier conversation.
   to the work the session holds, and nothing from that work needs carrying,
   the message shows `/clear` on a line of its own in place of the `/compact`
   line. It says the next task starts fresh and that `/resume` brings the
-  earlier conversation back, and the request follows under "Then run:". When
+  earlier conversation back, and the request follows under "Then run:". It
+  ends by saying you can skip the clear and run the next step as it is. When
   that is in doubt, it shows the `/compact` line. The hand-off at the end of a
   skill always shows the `/compact` line.
   Claude Code takes `/compact` instructions as a focus for the summary, so
