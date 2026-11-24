@@ -166,8 +166,19 @@ the worked example.
   runs, so a `tool_used` grader on `Skill` never fires for it; grade the
   behaviour instead. A Skill call the model makes later, to another skill, is
   still seen by a `tool_used` grader, which is how the bugfix hand-off case
-  grades its call to `ponderly:switch-task` with `/ponderly:pr #7`. A prompt that merely describes the work does trigger the
-  Skill tool, which is what the workflow-rule cases grade.
+  grades its call to `ponderly:switch-task` with `/ponderly:pr #7`. A prompt
+  that merely describes the work does trigger the Skill tool, which is what
+  the workflow-rule cases grade.
+- The size hook reads the session's real size and declines a
+  `ponderly:switch-task` call under 150,000 tokens, or 110,000 before
+  `implement-spec`, and has no override. A sandbox session is far under that,
+  so `lld/switches-at-the-hand-off` and `bugfix/hands-off-to-pr` grade the
+  call and the decline, not the switch message. A session filled to the limit
+  was judged too costly a run. What the size hook prints on an allowed call is
+  covered by `checks/test_switch_size.py`, and the switch message by
+  `switch-task/writes-the-compact-line`. The size sentence the switch message
+  carries after an allowed call is covered by nothing and shows only in a real
+  session.
 
 ## Writing a case
 
@@ -193,8 +204,9 @@ every pr scaffold. Extra files a case needs
 live in its own `files/` folder; the harness copies nothing from it, the case's
 scaffold does. Copied before `setup.sh` runs, they land in its one commit, on
 main and on the branch, as works-one-wave does, and a file at a fixture path
-replaces the fixture's copy; copied after, they are left uncommitted. Give a case one grader on the result and one on the
-steps where both make sense. Prefer graders that read the transcript or a file
+replaces the fixture's copy; copied after, they are left uncommitted. Give a
+case one grader on the result and one on the steps where both make sense.
+Prefer graders that read the transcript or a file
 (`regex`, `tool_used`, `file_exists`, `target: { source: file }`); an `llm`
 grader adds three judge calls per run. `file_exists` counts only files created
 during the run, so a scaffold-created or edited file is invisible to it. A
