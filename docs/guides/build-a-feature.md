@@ -76,22 +76,30 @@ two options. **Approved** moves on to the task list.
 Last it writes `tasks.md`: the tasks, grouped into waves that can run
 together. It asks a third time, with the same two options.
 
-![Claude asks whether the task list builds the design in an acceptable order, with the options Approved and Changes needed; the author picks Approved, and Claude says the spec is in .ponderly/specs/design-skills/ and the next step is /ponderly:implement-spec design-skills (captured before the switch message shown below).](../images/feature-tasks-approval.svg)
+![Claude asks whether the task list builds the design in an acceptable order, with the options Approved and Changes needed; the author picks Approved, and the switch-task skill ends the turn with the switch message: the session holds about 149000 tokens, a /compact line that says what was finished, what comes next and what to keep, then /ponderly:implement-spec switch-task-eval-gaps to run, and a line that the compaction can be skipped.](../images/feature-tasks-approval.svg)
 
-After **Approved**, it says where the spec is and what comes next:
-`/ponderly:implement-spec design-skills`. It also names two things to
-settle first. `start-task` never creates the branch. When you are on the
-default branch, `implement-spec` offers to create it at set-up, and `pr`
-offers it too. This example's worktree was detached at `origin/main`, not on
-`main` by name, so no offer would come; the author created it by hand with
-`git checkout -b design-skills`. And if you want `pr` to close an issue,
-file it now; the branch then becomes `<number>-design-skills`.
+This one capture comes from a later piece of work on plugin 1.10.0, the
+`switch-task-eval-gaps` spec; the rest of this guide follows the
+`design-skills` example.
+
+After **Approved**, the turn ends with the switch message: how many tokens the
+session holds, a `/compact` line to paste, then the command to run,
+`/ponderly:implement-spec switch-task-eval-gaps`, and a line saying you can
+skip the compaction.
+
+Two things are worth settling before you build. `start-task` never creates
+the branch. When you are on the default branch, `implement-spec` offers to
+create it at set-up, and `pr` offers it too. In the `design-skills` example
+the worktree was detached at `origin/main`, not on `main` by name, so no offer
+would come; the author created the branch by hand with
+`git checkout -b design-skills`. And if you want `pr` to close an issue, file
+it now; the branch then becomes `<number>-design-skills`.
 
 The spec folder now holds `requirements.md`, `design.md` and `tasks.md`.
 
 Because building is a different task from writing the spec, `start-task` ends
-by running `switch-task` at this hand-off, which shows this message instead of
-only naming the next command:
+by running `switch-task` at this hand-off. The image above shows the message;
+this is the same message for the `design-skills` example, to copy from:
 
 ```
 This task is done and the next one is a different task. This session holds about 310,000 tokens. Compact first, so the next task does not re-read this one on every turn:
