@@ -58,12 +58,18 @@ Then run:
 You can skip the compaction and run the next step as it is.
 ```
 
-For the `/clear` form, replace the first paragraph and the `/compact` line, and keep everything from "Then run:" on. The two parts read:
+For the `/clear` form, write this instead, with each Next_Step in place, and nothing after it:
 
 ```
 This task is done and the next one is unrelated to it. Start fresh, so the next task carries none of this one; /resume brings this conversation back if you need it:
 
 /clear
+
+Then run:
+
+<Next_Step>
+
+You can skip the clear and run the next step as it is.
 ```
 
 With several Next_Steps, "Then run:" reads "Then run one of:" and each command has a line of its own.
